@@ -351,3 +351,64 @@ Ship after step 5 if you want to start using it. Steps 6–7 can follow.
 - Photos or audio attached to an item.
 - A printed/PDF export of the whole list for her eighteenth birthday.
 - Comments from other family members on someone else's item.
+
+---
+
+## 12. App architecture (decided)
+
+### Layout
+
+```
+susies-list/
+  mobile/          <- the Expo project (NOT named "app/" — Expo Router reserves that
+                      name for file-based routes inside the project)
+  supabase/        <- SQL migrations
+  .github/workflows/
+  SPEC.md, CLAUDE.md
+```
+
+### Decisions
+
+| Choice | Decision |
+|---|---|
+| Navigation | Expo Router (file-based) |
+| Language | TypeScript |
+| Styling | React Native `StyleSheet` — no styling library |
+| Data access | `supabase-js` directly; no ORM |
+| Auth (now) | Supabase **email OTP** — 6-digit code, no deep-link handling needed |
+| Auth (later) | Sign in with Apple, once the Apple Developer org account is active |
+
+**Auth staging.** The Apple Developer org account is still in progress, so Sign in with
+Apple — which requires a development build on a physical device — can't be tested yet.
+Build against email OTP first. Supabase treats both as providers over the same `auth.users`
+table, so no schema changes and no rewrites of app data logic when Apple is added; only
+the login screen changes.
+
+Prefer OTP **codes** over magic links during this phase: links require universal-link /
+deep-link configuration, which is exactly the fragile part we're deferring.
+
+### Verify, do not assume
+
+These have changed across versions. Check current docs rather than relying on memory:
+
+- Session persistence for `supabase-js` in React Native — which storage adapter
+  (`AsyncStorage` vs `expo-secure-store`) and whether a URL polyfill is still required.
+- The exact `supabase-js` auth method names and options for OTP sign-in and verification.
+- `expo-apple-authentication` setup steps, and Supabase's Apple provider configuration.
+
+### First pass scope (stop here)
+
+1. Expo project in `mobile/`, TypeScript, Expo Router.
+2. `.env` handling for `SUPABASE_URL` / `SUPABASE_ANON_KEY` (never commit real values).
+3. A single `lib/supabase.ts` client with working session persistence.
+4. Auth gate: unauthenticated → login screen; authenticated → placeholder home screen.
+5. On first successful login, create the user's `profiles` row (display name prompt).
+6. Sign out.
+
+**Do not build** families, categories, or items in this pass. The point is to confirm a
+real login round-trips to Postgres and survives an app restart.
+
+### Definition of done
+
+Sign in on a device or simulator, see a `profiles` row appear in the Supabase dashboard,
+force-quit the app, reopen it, and still be signed in.

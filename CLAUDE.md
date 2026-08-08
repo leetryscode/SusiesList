@@ -40,5 +40,10 @@ families (subject_name, invite_code)
 
 ## Current status
 
-Planning complete; implementation not started. Next step is running the SQL from SPEC.md
-sections 3–6 in the Supabase SQL editor and testing isolation with two accounts.
+Build order steps 1–2 are done: schema, RLS, and RPCs are live in Supabase, and the
+keep-alive workflow is in the repo. Still outstanding from step 1: isolation testing with
+two real accounts.
+
+**Next: step 3 — the Expo scaffold.** See SPEC.md §12 for the layout, decisions, first-pass
+scope, and definition of done. The Expo project goes in `mobile/`, and auth uses email OTP
+for now (Sign in with Apple comes later, once the Apple Developer org account is active).
