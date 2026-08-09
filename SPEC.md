@@ -387,6 +387,33 @@ the login screen changes.
 Prefer OTP **codes** over magic links during this phase: links require universal-link /
 deep-link configuration, which is exactly the fragile part we're deferring.
 
+**Email template setup (required for codes).** Supabase's default templates send a
+clickable link via `{{ .ConfirmationURL }}`, which resolves against the project's Site URL
+— `http://localhost:3000` by default, producing a blank page on a phone. To send a 6-digit
+code instead, edit **both** templates in Authentication → Email Templates to use
+`{{ .Token }}`:
+
+- **Confirm signup** — sent when the email address is new
+- **Magic Link** — sent when the user already exists
+
+`signInWithOtp` picks between them based on whether the account exists, so fixing only one
+leaves a delayed failure.
+
+### SMTP (Resend) — known-good configuration
+
+| Setting | Value |
+|---|---|
+| Host | `smtp.resend.com` |
+| Port | 465 (try 587 if connections fail) |
+| Username | `resend` |
+| Password | a **Resend API key** (`re_...`) — not the account password |
+| Sender | `lee@orbitintroductions.com` (domain verified in Resend) |
+
+A `535 "Authentication credentials invalid"` in Supabase's Auth logs means the password is
+not a valid API key. Resend's API-keys page showing "No activity" for the key confirms it.
+Note the 60-second per-user minimum interval, which silently blocks rapid retries during
+testing.
+
 ### Verify, do not assume
 
 These have changed across versions. Check current docs rather than relying on memory:
@@ -412,3 +439,7 @@ real login round-trips to Postgres and survives an app restart.
 
 Sign in on a device or simulator, see a `profiles` row appear in the Supabase dashboard,
 force-quit the app, reopen it, and still be signed in.
+
+**Confirmed 2026-08-09** on a real device via Expo Go (SDK 54): profile row created with
+the entered display name, session survived a force-quit/reopen, and sign-out returned to
+the sign-in screen. Step 3 first pass is complete.

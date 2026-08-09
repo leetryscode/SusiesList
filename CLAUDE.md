@@ -40,10 +40,12 @@ families (subject_name, invite_code)
 
 ## Current status
 
-Build order steps 1–2 are done: schema, RLS, and RPCs are live in Supabase, and the
-keep-alive workflow is in the repo. Still outstanding from step 1: isolation testing with
-two real accounts.
+Build order steps 1–3 are done. Schema, RLS, and RPCs are live in Supabase; the keep-alive
+workflow is in the repo; the Expo scaffold in `mobile/` has working email-OTP sign-in,
+session persistence across app restarts, first-login profile creation, and sign-out —
+confirmed on a real device. Still outstanding from step 1: isolation testing with two real
+accounts.
 
-**Next: step 3 — the Expo scaffold.** See SPEC.md §12 for the layout, decisions, first-pass
-scope, and definition of done. The Expo project goes in `mobile/`, and auth uses email OTP
-for now (Sign in with Apple comes later, once the Apple Developer org account is active).
+**Next: step 4 — create family / join by code**, including the deep link. See SPEC.md §12
+for how auth is currently wired (email OTP now, Sign in with Apple later) before building
+on top of it.
