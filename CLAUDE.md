@@ -40,14 +40,17 @@ families (subject_name, invite_code)
 
 ## Current status
 
-Build order steps 1–3 are done. Schema, RLS, and RPCs are live in Supabase; the keep-alive
-workflow is in the repo; the Expo scaffold in `mobile/` has working email-OTP sign-in,
-session persistence across app restarts, first-login profile creation, and sign-out —
-confirmed on a real device. Still outstanding from step 1: isolation testing with two real
-accounts.
+Build order steps 1–4 are done. Schema, RLS, and RPCs are live in Supabase; the keep-alive
+workflow is in the repo; email-OTP sign-in, session persistence, first-login profile
+creation, and sign-out are confirmed on a real device; and family create/join by code is
+confirmed too (created a family with one account, signed out, joined the same family with
+a second account by code — no picker).
 
-**Step 4 (create family / join by code) is implemented, not yet device-tested.** Join
-and create screens, the family-membership auth-gate branch, and the custom-scheme deep
-link (`susieslist://join/CODE`) are built per SPEC.md §13 — universal links deferred
-(needs a hosted domain). Next: verify on device — create the family as the owner, then
-join it as a second account, and confirm isolation still holds.
+**Still genuinely outstanding: real isolation testing.** What's confirmed so far is two
+accounts *in the same* family. Not yet confirmed: a *third*, unrelated account (no
+membership, no code used) truly cannot see this family's data through any query — the RLS
+policies are written to guarantee this, but it hasn't been exercised live.
+
+**Next: step 5 — categories and items.** List view grouped by category, author shown on
+each item, tap through to the note. See SPEC.md §1 and §3 for the shape, and rules 2–3 in
+this file (soft delete only, author-only edits) before writing any item mutation code.

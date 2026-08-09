@@ -480,6 +480,12 @@ the `susieslist://join/SUSIE` example in §7.
 - This deliberately doesn't auto-join without a confirming tap — the code is pre-filled,
   not silently submitted.
 
+**Confirmed 2026-08-09** on a real device: created a family with one account, signed out,
+signed in with a second account, and joined the same family by typing the code — landed
+straight in with no picker. Note this confirms *joining*, not isolation — a third,
+unrelated account has not yet been used to confirm it sees nothing of this family. That
+isolation test is still the one outstanding item from build order step 1.
+
 **Universal links (`https://...`) are deferred, not built.** They need a hosted domain
 serving an Apple App Site Association file plus the associated-domains entitlement,
 neither of which exist yet. Custom-scheme links work for texting an invite today; revisit
