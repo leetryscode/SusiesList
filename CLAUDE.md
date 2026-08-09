@@ -51,6 +51,9 @@ accounts *in the same* family. Not yet confirmed: a *third*, unrelated account (
 membership, no code used) truly cannot see this family's data through any query — the RLS
 policies are written to guarantee this, but it hasn't been exercised live.
 
-**Next: step 5 — categories and items.** List view grouped by category, author shown on
-each item, tap through to the note. See SPEC.md §1 and §3 for the shape, and rules 2–3 in
-this file (soft delete only, author-only edits) before writing any item mutation code.
+**Step 5 (categories and items) is implemented, not yet device-tested.** Grouped list
+view, tap-through detail with inline edit (author only) and delete (author or owner via
+`soft_delete_item`), and add-item per category. Default categories only — no custom
+category creation yet. See SPEC.md §14. Next: verify on device — add items as both
+family members, confirm edit is blocked for non-authors, confirm delete works for the
+owner on someone else's item.

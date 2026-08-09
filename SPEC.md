@@ -490,3 +490,41 @@ isolation test is still the one outstanding item from build order step 1.
 serving an Apple App Site Association file plus the associated-domains entitlement,
 neither of which exist yet. Custom-scheme links work for texting an invite today; revisit
 once there's a real domain to host AASA on.
+
+---
+
+## 14. Categories and items (step 5, decided)
+
+**Scope for this pass:** the four default categories seeded by `create_family` only — no
+custom-category creation yet (not called for by build order step 5's own line, and there's
+no UI need for it until someone actually wants a category beyond the defaults).
+
+### List screen (`(app)/index.tsx`)
+
+A `SectionList` — one section per category (in `sort_order`), items sorted by
+`created_at`. Each section header has a small "+ Add" link that opens `new-item` with the
+category pre-selected via a route param. No local cache yet (that's step 6) — data is
+fetched on every screen focus via `useFocusEffect`, which also means edits/adds/deletes
+made elsewhere are reflected on return without extra plumbing.
+
+Author names are resolved with a second query (`profiles` by the distinct `created_by`
+ids in view) rather than a Supabase embedded join — the same choice made in
+`family-context.tsx` for `family_members → families`, for the same reason: without
+generated DB types, `supabase-js` infers embedded relationships as arrays even for
+to-one foreign keys, which fights the type checker for no real benefit at this data
+volume.
+
+### Item detail (`(app)/item/[id].tsx`)
+
+Single screen, two modes (view / inline edit) rather than a separate edit route — the
+form is two fields, not worth a second screen. Edit is only offered to the author
+(rule 3); delete is offered to the author *or* the family owner, and always goes through
+the `soft_delete_item` RPC (rule 2 — `items` has no delete policy, this is the only path).
+
+### Sign-out relocated
+
+Now a header button in `(app)/_layout.tsx` instead of a button on the home screen, since
+the home screen is the actual list now. The owner's invite code moved to a list footer.
+
+**Confirmed 2026-08-09**: typechecks clean, bundles clean (`expo-doctor` 18/18). Not yet
+verified on-device — do that before considering step 5 done.
