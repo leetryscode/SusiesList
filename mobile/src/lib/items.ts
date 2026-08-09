@@ -34,26 +34,31 @@ export async function getItem(itemId: string): Promise<Item> {
   return data;
 }
 
+/** id is generated client-side (see lib/sync.ts) so offline-created items
+ * keep a stable id from the moment they're created, with nothing to
+ * reconcile once the write actually reaches Supabase. */
 export async function createItem(
+  id: string,
   categoryId: string,
   authorId: string,
   title: string,
   note: string
-): Promise<string | null> {
+): Promise<void> {
   const { error } = await supabase.from("items").insert({
+    id,
     category_id: categoryId,
     created_by: authorId,
     title,
     note: note.length > 0 ? note : null,
   });
-  return error?.message ?? null;
+  if (error) throw error;
 }
 
 export async function updateItem(
   itemId: string,
   title: string,
   note: string
-): Promise<string | null> {
+): Promise<void> {
   const { error } = await supabase
     .from("items")
     .update({
@@ -62,12 +67,12 @@ export async function updateItem(
       updated_at: new Date().toISOString(),
     })
     .eq("id", itemId);
-  return error?.message ?? null;
+  if (error) throw error;
 }
 
-export async function deleteItem(itemId: string): Promise<string | null> {
+export async function deleteItem(itemId: string): Promise<void> {
   const { error } = await supabase.rpc("soft_delete_item", {
     p_item_id: itemId,
   });
-  return error?.message ?? null;
+  if (error) throw error;
 }

@@ -11,15 +11,30 @@ import {
 } from "react-native";
 
 import { useFamily } from "../../context/family-context";
-import { listCategories, type Category } from "../../lib/categories";
-import { listItems, type Item } from "../../lib/items";
-import { listDisplayNames } from "../../lib/profiles";
+import type { Category } from "../../lib/categories";
+import type { Item } from "../../lib/items";
+import {
+  flushPendingWrites,
+  loadCachedFamilyData,
+  refreshFamilyData,
+} from "../../lib/sync";
 
 type Section = {
   category: Category;
   title: string;
   data: Item[];
 };
+
+function toSections(
+  categories: Category[],
+  items: Item[]
+): Section[] {
+  return categories.map((category) => ({
+    category,
+    title: category.name,
+    data: items.filter((item) => item.category_id === category.id),
+  }));
+}
 
 export default function Home() {
   const { family } = useFamily();
@@ -32,23 +47,26 @@ export default function Home() {
   const load = useCallback(async () => {
     if (!family) return;
     setError(null);
-    try {
-      const categories = await listCategories(family.id);
-      const items = await listItems(categories.map((c) => c.id));
-      const names = await listDisplayNames(items.map((i) => i.created_by));
 
-      setAuthorNames(names);
-      setSections(
-        categories.map((category) => ({
-          category,
-          title: category.name,
-          data: items.filter((item) => item.category_id === category.id),
-        }))
-      );
+    const cached = await loadCachedFamilyData(family.id);
+    if (cached) {
+      setSections(toSections(cached.categories, cached.items));
+      setAuthorNames(cached.authorNames);
+      setIsLoading(false);
+    }
+
+    await flushPendingWrites();
+
+    try {
+      const fresh = await refreshFamilyData(family.id);
+      setSections(toSections(fresh.categories, fresh.items));
+      setAuthorNames(fresh.authorNames);
     } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : "Failed to load."
-      );
+      if (!cached) {
+        setError(
+          loadError instanceof Error ? loadError.message : "Failed to load."
+        );
+      }
     } finally {
       setIsLoading(false);
     }

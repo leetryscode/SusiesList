@@ -51,9 +51,15 @@ accounts *in the same* family. Not yet confirmed: a *third*, unrelated account (
 membership, no code used) truly cannot see this family's data through any query — the RLS
 policies are written to guarantee this, but it hasn't been exercised live.
 
-**Step 5 (categories and items) is implemented, not yet device-tested.** Grouped list
-view, tap-through detail with inline edit (author only) and delete (author or owner via
-`soft_delete_item`), and add-item per category. Default categories only — no custom
-category creation yet. See SPEC.md §14. Next: verify on device — add items as both
-family members, confirm edit is blocked for non-authors, confirm delete works for the
-owner on someone else's item.
+Step 5 (categories and items) is also done and confirmed on device: items added and
+grouped correctly, edit restricted to the author, delete working for the owner on items
+they didn't author, and correctly hidden from everyone else. See SPEC.md §14.
+
+**Step 6 (local-first cache, offline writes) is implemented, not yet device-tested.**
+AsyncStorage-backed cache (not SQLite/MMKV — data's too small to need it), optimistic
+offline-capable item writes with a persisted retry queue, client-generated item ids to
+avoid id-reconciliation. Family create/join stays online-only by design. See SPEC.md §15
+for the full design and the one known gap (offline item-detail viewing not yet exercised
+in airplane mode). Next: verify on device — turn on airplane mode, add/edit/delete items,
+confirm they appear immediately, then reconnect and confirm they actually landed in
+Supabase.

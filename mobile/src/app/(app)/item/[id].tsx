@@ -14,8 +14,12 @@ import {
 
 import { useAuth } from "../../../context/auth-context";
 import { useFamily } from "../../../context/family-context";
-import { deleteItem, getItem, updateItem, type Item } from "../../../lib/items";
-import { listDisplayNames } from "../../../lib/profiles";
+import type { Item } from "../../../lib/items";
+import {
+  deleteItemOffline,
+  getItemWithFallback,
+  updateItemOffline,
+} from "../../../lib/sync";
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,15 +39,18 @@ export default function ItemDetail() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const load = useCallback(async () => {
-    if (!id) return;
+    if (!id || !family) return;
     setError(null);
     try {
-      const loadedItem = await getItem(id);
-      const names = await listDisplayNames([loadedItem.created_by]);
-      setItem(loadedItem);
-      setAuthorName(names[loadedItem.created_by] ?? "someone");
-      setTitle(loadedItem.title);
-      setNote(loadedItem.note ?? "");
+      const result = await getItemWithFallback(family.id, id);
+      if (!result) {
+        setError("Item not found.");
+        return;
+      }
+      setItem(result.item);
+      setAuthorName(result.authorName);
+      setTitle(result.item.title);
+      setNote(result.item.note ?? "");
     } catch (loadError) {
       setError(
         loadError instanceof Error ? loadError.message : "Failed to load."
@@ -51,7 +58,7 @@ export default function ItemDetail() {
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, family]);
 
   useEffect(() => {
     load();
@@ -61,9 +68,14 @@ export default function ItemDetail() {
   const canDelete = isAuthor || family?.role === "owner";
 
   async function handleSave() {
-    if (!item) return;
+    if (!item || !family) return;
     setIsSaving(true);
-    const saveError = await updateItem(item.id, title.trim(), note.trim());
+    const saveError = await updateItemOffline(
+      family.id,
+      item.id,
+      title.trim(),
+      note.trim()
+    );
     setIsSaving(false);
     if (saveError) {
       setError(saveError);
@@ -74,7 +86,7 @@ export default function ItemDetail() {
   }
 
   function confirmDelete() {
-    if (!item) return;
+    if (!item || !family) return;
     Alert.alert("Delete this item?", undefined, [
       { text: "Cancel", style: "cancel" },
       {
@@ -82,7 +94,7 @@ export default function ItemDetail() {
         style: "destructive",
         onPress: async () => {
           setIsDeleting(true);
-          const deleteError = await deleteItem(item.id);
+          const deleteError = await deleteItemOffline(family.id, item.id);
           setIsDeleting(false);
           if (deleteError) {
             setError(deleteError);

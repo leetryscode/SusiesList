@@ -11,11 +11,13 @@ import {
 } from "react-native";
 
 import { useAuth } from "../../context/auth-context";
-import { createItem } from "../../lib/items";
+import { useFamily } from "../../context/family-context";
+import { createItemOffline } from "../../lib/sync";
 
 export default function NewItem() {
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
   const { session } = useAuth();
+  const { family } = useFamily();
   const router = useRouter();
 
   const [title, setTitle] = useState("");
@@ -24,10 +26,11 @@ export default function NewItem() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleAdd() {
-    if (!session || !categoryId) return;
+    if (!session || !family || !categoryId) return;
     setError(null);
     setIsSubmitting(true);
-    const submitError = await createItem(
+    const submitError = await createItemOffline(
+      family.id,
       categoryId,
       session.user.id,
       title.trim(),

@@ -526,5 +526,64 @@ the `soft_delete_item` RPC (rule 2 — `items` has no delete policy, this is the
 Now a header button in `(app)/_layout.tsx` instead of a button on the home screen, since
 the home screen is the actual list now. The owner's invite code moved to a list footer.
 
-**Confirmed 2026-08-09**: typechecks clean, bundles clean (`expo-doctor` 18/18). Not yet
-verified on-device — do that before considering step 5 done.
+**Confirmed 2026-08-09** on a real device, both accounts: items added and grouped
+correctly with the right author name, edit only offered to the author, the owner could
+delete an item they didn't author, and a non-owner non-author saw no delete option. Step 5
+is done.
+
+---
+
+## 15. Local-first cache and offline writes (step 6, decided)
+
+**Scope for this pass:** items only. `create_family`/`join_family` stay online-only —
+onboarding is a one-time action and requiring connectivity for it is a reasonable
+trade-off against the complexity of making it offline-safe too.
+
+### Storage choice: AsyncStorage, not SQLite/MMKV
+
+SPEC.md §2's original stack table listed "SQLite / MMKV cache" as an option, written
+during planning before any real data shape existed. In practice a family's list is a
+handful of categories and, realistically, dozens to low hundreds of items — small enough
+that a JSON blob in AsyncStorage (already a dependency, already used for the session and
+the pending-invite-code stash) does the job without adding a new storage engine. Revisit
+only if this stops being true.
+
+### Modules
+
+- `lib/local-cache.ts` — reads/writes one JSON blob per family (`categories`, `items`,
+  `authorNames`) to AsyncStorage.
+- `lib/write-queue.ts` — a persisted, ordered list of pending item writes (create/update/
+  delete) that couldn't reach Supabase.
+- `lib/sync.ts` — the layer screens actually call. `refreshFamilyData` fetches live and
+  updates the cache; `createItemOffline`/`updateItemOffline`/`deleteItemOffline` apply the
+  change to the cache immediately (optimistic UI) and attempt the real write, falling back
+  to the queue only when the failure looks like a network problem; `flushPendingWrites`
+  drains the queue in order, called at the start of every list-screen load.
+
+### Client-generated item ids
+
+New items get their id from `expo-crypto`'s `Crypto.randomUUID()` on the client, passed
+explicitly into the `items.insert`, instead of relying on the column's
+`gen_random_uuid()` default. This sidesteps the classic offline-first "temp id vs. real
+id" reconciliation problem entirely — an item created while offline already has its
+permanent id the moment it's queued, matching what Supabase will eventually store.
+
+### Telling a network failure from a real rejection
+
+Supabase's own error shape doesn't cleanly distinguish "couldn't reach the server" from
+"the server rejected this." `sync.ts`'s `isNetworkError` heuristic (message matches
+`/network|fetch/i`) decides which: a network-shaped error gets queued and retried later;
+anything else (an RLS rejection, a bad request) surfaces to the user immediately and is
+**not** retried — retrying a write that will never succeed on every app focus forever
+would be worse than just failing loudly once.
+
+### What's still a known gap
+
+Editing or deleting an item that was created offline and hasn't synced yet works (the
+queue processes in order, so the create always lands before a later update/delete for the
+same id), but viewing that item's detail screen while still offline depends on the list
+screen's cache already containing it, which it will — it was written there
+optimistically at creation time. This hasn't been exercised end-to-end in airplane mode;
+do that before calling step 6 fully done.
+
+**Not yet verified on-device.**
