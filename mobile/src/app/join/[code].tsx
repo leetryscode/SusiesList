@@ -5,14 +5,17 @@ import { setPendingInviteCode } from "../../lib/pending-invite";
 
 export default function JoinDeepLink() {
   const { code } = useLocalSearchParams<{ code: string }>();
-  const [isStashed, setIsStashed] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (!code) return;
-    setPendingInviteCode(code).then(() => setIsStashed(true));
+    if (!code) {
+      setIsReady(true);
+      return;
+    }
+    setPendingInviteCode(code).then(() => setIsReady(true));
   }, [code]);
 
-  if (!isStashed) return null;
+  if (!isReady) return null;
 
   return <Redirect href="/" />;
 }

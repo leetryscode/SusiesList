@@ -35,8 +35,6 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="join/[code]" />
-
       <Stack.Protected guard={!!session && !!profile && !!family}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
@@ -52,6 +50,8 @@ function RootNavigator() {
       <Stack.Protected guard={!session}>
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
+
+      <Stack.Screen name="join/[code]" />
     </Stack>
   );
 }
