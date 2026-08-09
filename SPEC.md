@@ -443,3 +443,44 @@ force-quit the app, reopen it, and still be signed in.
 **Confirmed 2026-08-09** on a real device via Expo Go (SDK 54): profile row created with
 the entered display name, session survived a force-quit/reopen, and sign-out returned to
 the sign-in screen. Step 3 first pass is complete.
+
+---
+
+## 13. Family onboarding (step 4, decided)
+
+**Model:** one user, one family for v1 — matches rule 4 (no family picker). You (the
+owner) create the family once; everyone else joins by code. SPEC.md §7 covers joining but
+never said how the first family gets created, so this fills that gap.
+
+### Screen: `join-family.tsx`
+
+Shown after auth + profile, when the signed-in user has no `family_members` row.
+
+- **Primary**: a single "Enter your family code" input + Join button, calling the
+  `join_family` RPC. This is the path almost everyone hits.
+- **Secondary**: a collapsed "Set up a new family instead" toggle, revealing subject-name
+  + invite-code inputs and a Create button, calling `create_family`. Only the owner uses
+  this, once.
+
+The invite-code inputs are plain freeform text (no numeric/alpha format enforced) —
+`invite_code` in the schema is already unconstrained text, so switching from numeric codes
+to letter codes later needs no app changes, just a different string typed at creation time.
+
+### Deep link (custom scheme only)
+
+`app.json` `scheme` changed from the scaffold default (`mobile`) to `susieslist`, matching
+the `susieslist://join/SUSIE` example in §7.
+
+- `src/app/join/[code].tsx` is an always-reachable, unprotected route (outside every
+  `Stack.Protected` block in the root layout) that stashes the code via
+  `AsyncStorage` (`lib/pending-invite.ts`) and redirects to `/`. The root layout's own
+  auth/family gate then routes wherever the user actually belongs — sign-in if signed out,
+  `join-family` if signed in but family-less (where the stashed code pre-fills the input),
+  or straight into the app if they're already in a family.
+- This deliberately doesn't auto-join without a confirming tap — the code is pre-filled,
+  not silently submitted.
+
+**Universal links (`https://...`) are deferred, not built.** They need a hosted domain
+serving an Apple App Site Association file plus the associated-domains entitlement,
+neither of which exist yet. Custom-scheme links work for texting an invite today; revisit
+once there's a real domain to host AASA on.

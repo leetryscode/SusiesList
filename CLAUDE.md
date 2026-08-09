@@ -46,6 +46,8 @@ session persistence across app restarts, first-login profile creation, and sign-
 confirmed on a real device. Still outstanding from step 1: isolation testing with two real
 accounts.
 
-**Next: step 4 — create family / join by code**, including the deep link. See SPEC.md §12
-for how auth is currently wired (email OTP now, Sign in with Apple later) before building
-on top of it.
+**Step 4 (create family / join by code) is implemented, not yet device-tested.** Join
+and create screens, the family-membership auth-gate branch, and the custom-scheme deep
+link (`susieslist://join/CODE`) are built per SPEC.md §13 — universal links deferred
+(needs a hosted domain). Next: verify on device — create the family as the owner, then
+join it as a second account, and confirm isolation still holds.

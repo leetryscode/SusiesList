@@ -3,19 +3,25 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
 import { AuthProvider, useAuth } from "../context/auth-context";
+import { FamilyProvider, useFamily } from "../context/family-context";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootNavigator />
+      <FamilyProvider>
+        <RootNavigator />
+      </FamilyProvider>
     </AuthProvider>
   );
 }
 
 function RootNavigator() {
-  const { session, profile, isLoading } = useAuth();
+  const { session, profile, isLoading: isAuthLoading } = useAuth();
+  const { family, isLoading: isFamilyLoading } = useFamily();
+
+  const isLoading = isAuthLoading || (!!session && isFamilyLoading);
 
   useEffect(() => {
     if (!isLoading) {
@@ -29,8 +35,14 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!!session && !!profile}>
+      <Stack.Screen name="join/[code]" />
+
+      <Stack.Protected guard={!!session && !!profile && !!family}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!session && !!profile && !family}>
+        <Stack.Screen name="join-family" />
       </Stack.Protected>
 
       <Stack.Protected guard={!!session && !profile}>
