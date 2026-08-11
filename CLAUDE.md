@@ -55,11 +55,11 @@ Step 5 (categories and items) is also done and confirmed on device: items added 
 grouped correctly, edit restricted to the author, delete working for the owner on items
 they didn't author, and correctly hidden from everyone else. See SPEC.md §14.
 
-**Step 6 (local-first cache, offline writes) is implemented, not yet device-tested.**
+**Step 6 (local-first cache, offline writes) is implemented and confirmed on device.**
 AsyncStorage-backed cache (not SQLite/MMKV — data's too small to need it), optimistic
 offline-capable item writes with a persisted retry queue, client-generated item ids to
-avoid id-reconciliation. Family create/join stays online-only by design. See SPEC.md §15
-for the full design and the one known gap (offline item-detail viewing not yet exercised
-in airplane mode). Next: verify on device — turn on airplane mode, add/edit/delete items,
-confirm they appear immediately, then reconnect and confirm they actually landed in
-Supabase.
+avoid id-reconciliation. Family create/join stays online-only by design. Create, edit, and
+delete were all exercised in airplane mode (applied instantly to the local list) and
+confirmed to have landed in Supabase after reconnecting. See SPEC.md §15 for the full
+design and the one remaining known gap (offline item-detail viewing not yet exercised in
+airplane mode).

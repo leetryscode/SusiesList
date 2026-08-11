@@ -10,7 +10,15 @@ export type PendingWrite =
       note: string;
     }
   | { kind: "update"; itemId: string; title: string; note: string }
-  | { kind: "delete"; itemId: string };
+  | { kind: "delete"; itemId: string }
+  | {
+      kind: "create-category";
+      categoryId: string;
+      familyId: string;
+      authorId: string;
+      name: string;
+      sortOrder: number;
+    };
 
 const KEY = "susies-list/pending-writes";
 

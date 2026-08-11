@@ -134,11 +134,19 @@ export default function Home() {
         error ? <Text style={styles.error}>{error}</Text> : null
       }
       ListFooterComponent={
-        family?.role === "owner" ? (
-          <Text style={styles.inviteCode}>
-            Family code: {family.invite_code}
-          </Text>
-        ) : null
+        <>
+          <Pressable
+            style={styles.addCategory}
+            onPress={() => router.push("/new-category")}
+          >
+            <Text style={styles.addCategoryText}>+ Add category</Text>
+          </Pressable>
+          {family?.role === "owner" ? (
+            <Text style={styles.inviteCode}>
+              Family code: {family.invite_code}
+            </Text>
+          ) : null}
+        </>
       }
     />
   );
@@ -190,6 +198,17 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     color: "#999",
     fontStyle: "italic",
+  },
+  addCategory: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
+    alignItems: "center",
+  },
+  addCategoryText: {
+    color: "#208AEF",
+    fontSize: 15,
+    fontWeight: "600",
   },
   error: {
     padding: 16,

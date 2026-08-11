@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(supabase --version)",
+      "Bash(npx --version)",
+      "Bash(npm --version)",
+      "Bash(npx --yes supabase db push)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "WebFetch(domain:supabase.com)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(node -e \"require\\('fs'\\).mkdirSync\\('src/app', {recursive:true}\\)\")",
+      "Bash(npx --yes expo install @supabase/supabase-js @react-native-async-storage/async-storage react-native-url-polyfill)",
+      "Bash(npx --yes supabase projects api-keys --project-ref qachmqajwmpfknssqrkg)",
+      "Bash(npx tsc *)",
+      "Bash(npx expo *)",
+      "Bash(git restore *)",
+      "Bash(npx expo-doctor *)",
+      "Bash(npx --yes supabase --help)",
+      "Bash(npx --yes supabase config --help)",
+      "Bash(rm -rf dist)",
+      "Bash(node -e ' *)",
+      "Bash(xargs grep -ln \"createItemOffline\\\\|isNetworkError\\\\|write-queue\\\\|local-cache\")",
+      "Bash(xargs grep -l \"fetchError\\\\|NetworkError\")"
+    ]
+  }
+}

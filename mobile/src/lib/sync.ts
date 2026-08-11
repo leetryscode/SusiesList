@@ -1,6 +1,9 @@
 import * as Crypto from "expo-crypto";
 
-import { listCategories } from "./categories";
+import {
+  createCategory as remoteCreateCategory,
+  listCategories,
+} from "./categories";
 import {
   createItem as remoteCreateItem,
   deleteItem as remoteDeleteItem,
@@ -24,10 +27,16 @@ import {
 /** Fetch failures (offline, no signal) look different from a real Postgres/RLS
  * rejection - supabase-js surfaces the former as a generic "Network request
  * failed"-style error with no Postgres error code attached. That's the
- * signal used here to decide "queue and retry" vs "show the user an error". */
+ * signal used here to decide "queue and retry" vs "show the user an error".
+ * Network failures from postgrest-js arrive as a plain object (not an Error
+ * instance) with a `message` field, e.g. "TypeError: Network request failed"
+ * - so this checks the message on anything with one, not just Error instances. */
 function isNetworkError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  return /network|fetch/i.test(error.message);
+  if (typeof error !== "object" || error === null || !("message" in error)) {
+    return false;
+  }
+  const message = (error as { message: unknown }).message;
+  return typeof message === "string" && /network|fetch/i.test(message);
 }
 
 export async function loadCachedFamilyData(
@@ -140,6 +149,42 @@ export async function deleteItemOffline(
   return null;
 }
 
+export async function createCategoryOffline(
+  familyId: string,
+  authorId: string,
+  name: string
+): Promise<string | null> {
+  const categoryId = Crypto.randomUUID();
+  const current = await readCachedFamilyData(familyId);
+  const sortOrder =
+    current && current.categories.length > 0
+      ? Math.max(...current.categories.map((c) => c.sort_order)) + 1
+      : 1;
+
+  await patchCache(familyId, (data) => ({
+    ...data,
+    categories: [
+      ...data.categories,
+      { id: categoryId, name, icon: null, sort_order: sortOrder },
+    ],
+  }));
+
+  try {
+    await remoteCreateCategory(categoryId, familyId, authorId, name, sortOrder);
+  } catch (error) {
+    if (!isNetworkError(error)) return (error as Error).message;
+    await enqueueWrite({
+      kind: "create-category",
+      categoryId,
+      familyId,
+      authorId,
+      name,
+      sortOrder,
+    });
+  }
+  return null;
+}
+
 /** Processes the pending-write queue in order. Stops at the first write that
  * still looks like a network failure (nothing after it can be trusted to
  * fare better right now) but drops - rather than retries forever - any
@@ -161,8 +206,16 @@ export async function flushPendingWrites(): Promise<void> {
         );
       } else if (next.kind === "update") {
         await remoteUpdateItem(next.itemId, next.title, next.note);
-      } else {
+      } else if (next.kind === "delete") {
         await remoteDeleteItem(next.itemId);
+      } else {
+        await remoteCreateCategory(
+          next.categoryId,
+          next.familyId,
+          next.authorId,
+          next.name,
+          next.sortOrder
+        );
       }
       await removeFirstPendingWrite();
     } catch (error) {

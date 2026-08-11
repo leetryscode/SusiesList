@@ -584,6 +584,15 @@ queue processes in order, so the create always lands before a later update/delet
 same id), but viewing that item's detail screen while still offline depends on the list
 screen's cache already containing it, which it will — it was written there
 optimistically at creation time. This hasn't been exercised end-to-end in airplane mode;
-do that before calling step 6 fully done.
+exercise that before calling this fully done.
 
-**Not yet verified on-device.**
+**Confirmed on-device (2026-08-09):** create, edit, and delete while in airplane mode all
+applied immediately to the local list; reconnecting and reloading showed all three had
+landed in Supabase. Item-detail viewing while offline (the gap above) is still
+unexercised.
+
+Fixed during this pass: `isNetworkError` in `lib/sync.ts` originally required
+`error instanceof Error`, but postgrest-js resolves fetch failures as a plain
+`{ message, ... }` object rather than throwing a real `Error` — so the check never
+matched and every offline write surfaced `"TypeError: Network request failed"` to the
+user instead of queueing. Fixed to check `.message` on any error-shaped value.
