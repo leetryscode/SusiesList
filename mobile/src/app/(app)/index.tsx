@@ -160,7 +160,10 @@ export default function Home() {
                     })
                   }
                 >
-                  <Text style={styles.rowTitle}>{item.title}</Text>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.rowTitle}>{item.title}</Text>
+                    {item.note ? <View style={styles.noteDot} /> : null}
+                  </View>
                   <Text style={styles.rowAuthor}>
                     added by {authorNames[item.created_by] ?? "someone"}
                   </Text>
@@ -241,12 +244,23 @@ const styles = StyleSheet.create({
   rowLast: {
     borderBottomWidth: 0,
   },
-  rowTitle: {
+  titleRow: {
     flex: 1,
     marginRight: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  rowTitle: {
     fontSize: 16,
     fontFamily: fonts.regular,
     color: colors.textPrimary,
+  },
+  noteDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.textSecondary,
+    marginLeft: 6,
   },
   rowAuthor: {
     flexShrink: 0,
