@@ -3,6 +3,8 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,84 +37,92 @@ export default function FamilySwitcher() {
   }
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={styles.screen}
-      contentContainerStyle={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text style={styles.title}>Susie's List</Text>
-      <Text style={styles.blurb}>
-        A private, shareable list of the books, movies, music, and recipes
-        your family wants to pass down — one list per family, just for the
-        people you invite.
-      </Text>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Susie's List</Text>
+        <Text style={styles.blurb}>
+          A private, shareable list of the books, movies, music, and recipes
+          your family wants to pass down — one list per family, just for the
+          people you invite.
+        </Text>
 
-      {isLoading ? (
-        <ActivityIndicator color={colors.accent} style={styles.loading} />
-      ) : (
-        <View style={styles.familyList}>
-          {families.map((family) => (
-            <Pressable
-              key={family.id}
-              style={styles.familyRow}
-              onPress={() => setActiveFamily(family.id)}
-            >
-              <Text style={styles.familyName}>{family.subject_name}</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={colors.textSecondary}
-              />
-            </Pressable>
-          ))}
+        {isLoading ? (
+          <ActivityIndicator color={colors.accent} style={styles.loading} />
+        ) : (
+          <View style={styles.familyList}>
+            {families.map((family) => (
+              <Pressable
+                key={family.id}
+                style={styles.familyRow}
+                onPress={() => setActiveFamily(family.id)}
+              >
+                <Text style={styles.familyName}>{family.subject_name}</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.actions}>
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => toggleForm("create")}
+          >
+            <Text style={styles.actionButtonText}>
+              {activeForm === "create" ? "Cancel" : "Create a new family"}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => toggleForm("join")}
+          >
+            <Text style={styles.actionButtonText}>
+              {activeForm === "join" ? "Cancel" : "Join a family with code"}
+            </Text>
+          </Pressable>
         </View>
-      )}
 
-      <View style={styles.actions}>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => toggleForm("create")}
-        >
-          <Text style={styles.actionButtonText}>
-            {activeForm === "create" ? "Cancel" : "Create a new family"}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => toggleForm("join")}
-        >
-          <Text style={styles.actionButtonText}>
-            {activeForm === "join" ? "Cancel" : "Join a family with code"}
-          </Text>
-        </Pressable>
-      </View>
+        {activeForm && (
+          <View style={styles.formSection}>
+            <JoinCreateFamilyForm
+              initialShowCreate={activeForm === "create"}
+            />
+          </View>
+        )}
 
-      {activeForm && (
-        <View style={styles.formSection}>
-          <JoinCreateFamilyForm initialShowCreate={activeForm === "create"} />
+        <View style={styles.footer}>
+          <Pressable style={styles.footerRow} onPress={shareApp} hitSlop={8}>
+            <Ionicons name="share-outline" size={16} color={colors.accent} />
+            <Text style={styles.footerLinkText}>Share app with Family</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.footerRow}
+            onPress={confirmSignOut}
+            hitSlop={8}
+            accessibilityLabel="Log out"
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={16}
+              color={colors.textSecondary}
+            />
+            <Text style={styles.footerText}>Log out</Text>
+          </Pressable>
         </View>
-      )}
-
-      <View style={styles.footer}>
-        <Pressable style={styles.footerRow} onPress={shareApp} hitSlop={8}>
-          <Ionicons name="share-outline" size={16} color={colors.accent} />
-          <Text style={styles.footerLinkText}>Share app with Family</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.footerRow}
-          onPress={confirmSignOut}
-          hitSlop={8}
-          accessibilityLabel="Log out"
-        >
-          <Ionicons
-            name="log-out-outline"
-            size={16}
-            color={colors.textSecondary}
-          />
-          <Text style={styles.footerText}>Log out</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

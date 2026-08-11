@@ -21,6 +21,7 @@ decisions change.
 
 ```
 families (subject_name, invite_code)
+  ├── family_members (user_id, role) — a user can belong to more than one family
   └── categories (Books, Movies, Music, Recipes, + custom)
         └── items (title, note, created_by, deleted_at, shared_at)
 ```
@@ -34,7 +35,9 @@ families (subject_name, invite_code)
 3. **Only the item's author may edit it.** The family owner may delete anything, but may
    not edit someone else's words.
 4. **No family picker during onboarding.** Users arrive via an invite link or type one
-   code. They should never search for or choose a family.
+   code. They should never search for or choose a family. (This is about a *brand-new*
+   user's first family only — an existing user who already belongs to one may see a
+   switcher to pick among their own families. See SPEC.md §18.)
 5. **Don't invent API surface.** Verify Expo, Apple, and Supabase method names and setup
    steps against current docs rather than assuming — these libraries move.
 
@@ -63,3 +66,12 @@ delete were all exercised in airplane mode (applied instantly to the local list)
 confirmed to have landed in Supabase after reconnecting. See SPEC.md §15 for the full
 design and the one remaining known gap (offline item-detail viewing not yet exercised in
 airplane mode).
+
+**Multi-family support is implemented but not yet confirmed on a real device.** A user can
+now belong to more than one family, switch between them from a new home screen, and get an
+invite-link confirmation prompt if they open a link for a family they don't already belong
+to (previously silently dropped for anyone past onboarding). The
+`family_name_by_code` migration behind that prompt is applied and confirmed on the linked
+Supabase project, and the app type-checks clean, but none of it has been exercised on
+device yet — see SPEC.md §18 for what changed and the specific scenarios still to test
+before calling it done.

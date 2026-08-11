@@ -469,9 +469,13 @@ the sign-in screen. Step 3 first pass is complete.
 
 ## 13. Family onboarding (step 4, decided)
 
-**Model:** one user, one family for v1 — matches rule 4 (no family picker). You (the
-owner) create the family once; everyone else joins by code. SPEC.md §7 covers joining but
-never said how the first family gets created, so this fills that gap.
+**Model (original, v1):** one user, one family — matches rule 4 (no family picker). You
+(the owner) create the family once; everyone else joins by code. SPEC.md §7 covers joining
+but never said how the first family gets created, so this fills that gap.
+
+**Superseded by §18.** A user can now belong to more than one family; everything below
+this note still describes the unchanged behavior for a brand-new (zero-family) user
+reaching this screen — see §18 for what changed for everyone else.
 
 ### Screen: `join-family.tsx`
 
@@ -546,6 +550,11 @@ the `soft_delete_item` RPC (rule 2 — `items` has no delete policy, this is the
 
 Now a header button in `(app)/_layout.tsx` instead of a button on the home screen, since
 the home screen is the actual list now. The owner's invite code moved to a list footer.
+
+**Superseded by §18.** Sign-out (renamed "Log out") and the app-level share action moved
+again, off this screen entirely and onto the new family-switcher home screen. The
+invite-code footer became a per-family share action, and is now visible to every member,
+not just the owner.
 
 **Confirmed 2026-08-09** on a real device, both accounts: items added and grouped
 correctly with the right author name, edit only offered to the author, the owner could
@@ -709,3 +718,103 @@ works in Expo Go — no dev client required for this feature specifically, unlik
 with Apple. The `app.json` plugin's custom permission-prompt strings won't actually apply
 until a real dev/production build exists (Expo Go shows its own generic prompt text
 instead) — cosmetic only, not a blocker.
+
+---
+
+## 18. Multi-family support (decided)
+
+**Motivation.** §13 originally assumed one user, one family, matching rule 4 (no family
+picker) for a first-time user. That still holds for onboarding — a brand-new user should
+never see a family picker. But nothing stops the same person from being invited into a
+*second* family later (e.g. one side of a family sets up their own list), and the schema
+already allowed it: `family_members` was always a proper `(family_id, user_id)` join table,
+not a one-to-one relationship. The one-to-one assumption lived entirely in the app layer
+(`FamilyContext`'s `.maybeSingle()` query, one `Family` object in state, routing gated on
+`!!family`). This section replaces that assumption without any schema migration.
+
+### `FamilyContext` (`context/family-context.tsx`)
+
+Fetches every `family_members` row for the user (joined to `families` in a second query,
+same no-embedded-joins reasoning as §14), not a single row. Exposes `families` (the full
+list) and `family` (the **active** one, or `null`), plus `setActiveFamily(id)` and
+`clearActiveFamily()`.
+
+**Active-family resolution**, on every refresh:
+- Exactly one family is never ambiguous — it auto-activates.
+- Two or more: only a persisted id (`lib/active-family.ts`, AsyncStorage, same pattern as
+  `pending-invite.ts`) that still matches a real membership is trusted. Otherwise the
+  active family resolves to `null` rather than guessing — this is what makes the switcher
+  screen (below) actually show up instead of silently landing in an arbitrary family.
+
+`joinFamily`/`createFamily` now capture the RPC's returned id and explicitly activate it
+after refreshing, rather than relying on refresh's own fallback to happen to pick it.
+
+`clearActiveFamily()` drops only the in-memory selection, not the persisted one — it backs
+the "Switch families" / "Create new family" links (below) without erasing your default for
+next launch if you back out without picking anything.
+
+### Home screen: `family-switcher.tsx`
+
+New top-of-stack screen: placeholder blurb, one tappable row per family (`subject_name`,
+tap → `setActiveFamily`), and "Create a new family" / "Join a family with code" buttons
+that reveal `components/join-create-family-form.tsx` — the join/create form and RPC calls
+extracted out of `join-family.tsx` so both screens share one implementation instead of
+duplicating it. Footer holds "Share app with Family" (`lib/share.ts`'s `shareApp`, moved
+here from the `(app)` header) and "Log out" (moved here from the list screen, same
+`Alert.alert` confirm pattern as before).
+
+### Routing gate (`app/_layout.tsx`)
+
+The old `!!session && !!profile && !!family`-style guards are replaced by a single ordered
+`resolveScreen()` function, evaluated once per render:
+
+1. No session → sign-in. No profile → complete-profile.
+2. A pending invite code **and** the user already has ≥1 family → `join-confirm` (see
+   below). Deliberately skipped for zero-family users, who still get the unchanged §13
+   onboarding flow with the code pre-filled instead.
+3. An active family → straight into `(app)`. (Exactly-one-family users always land here
+   automatically, per the resolution rule above — no switcher shown.)
+4. Zero families → `join-family` (§13, unchanged).
+5. Otherwise (2+ families, none active) → `family-switcher`.
+
+### Pending-invite gap fixed
+
+Previously, the code stashed by `join/[code].tsx` (§13) was only ever consumed by
+`join-family.tsx`, reachable exclusively by zero-family users — a signed-in user who
+*already* belonged to a family and tapped an invite link had their tap silently dropped.
+Two changes fix this:
+
+- **`context/pending-invite-context.tsx`** holds the stashed code in memory (not just
+  AsyncStorage), so a link tapped while the app is already open and running is picked up
+  immediately — previously this required a cold start to notice the stash.
+- **`join-confirm.tsx`** is a new interstitial ("Join `<name>`'s list?") shown per the
+  routing rule above. It calls the existing `join_family` RPC on confirm — no new join
+  mechanism, just a new place to trigger the old one — and activates the result.
+- Showing the family's name *before* the user commits required a new RPC,
+  `family_name_by_code(p_code)` (`supabase/migrations/20260814090000_family_name_by_code.sql`),
+  since `families_select`'s RLS policy (`is_family_member`) blocks a non-member from
+  reading the row directly. It's `security definer` but deliberately narrow — returns only
+  `subject_name`, nothing else about the family.
+
+### Family-detail screen (`(app)/index.tsx`)
+
+- Sign-out removed entirely (lives only on the home screen now, per above).
+- The owner-only invite-code footer became a per-family share section — "Share
+  `<subject_name>`'s list" (via a new `lib/share.ts` function, `shareFamily`, reusing the
+  existing `susieslist://join/<code>` deep link with the code also spelled out as plain
+  text, for a recipient without the app installed yet) plus the code itself as plain text.
+  **Visible to every member, not just the owner** — deliberately opened up from the
+  original owner-only convention (§14), since there's no rule restricting who may invite.
+- New "Switch families" / "Create new family" links at the bottom, both calling
+  `clearActiveFamily()` to fall back to the home screen via the routing gate above — no
+  direct navigation call, same reactive pattern used everywhere else in this app.
+
+### Status
+
+Implemented and type-checks clean. The `family_name_by_code` migration is applied and
+confirmed on the linked Supabase project. **Not yet exercised on a real device** — in
+particular: switching between 2+ families and persistence across a restart, a deep link
+tapped while the app is already open (the in-memory pending-invite fix), a deep link
+opened by a brand-new zero-family account (should still hit §13's flow, not
+`join-confirm`), and an invalid/expired code in `join-confirm`. Exercise all of these
+before calling this done.
