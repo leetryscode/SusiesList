@@ -13,10 +13,10 @@ import {
   View,
 } from "react-native";
 
-import { useAuth } from "../../context/auth-context";
 import { useFamily } from "../../context/family-context";
 import type { Category } from "../../lib/categories";
 import type { Item } from "../../lib/items";
+import { shareFamily } from "../../lib/share";
 import {
   deleteCategoryOffline,
   flushPendingWrites,
@@ -74,8 +74,7 @@ function toSections(
 }
 
 export default function Home() {
-  const { signOut } = useAuth();
-  const { family } = useFamily();
+  const { family, clearActiveFamily } = useFamily();
   const [sections, setSections] = useState<Section[]>([]);
   const [authorNames, setAuthorNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -95,13 +94,6 @@ export default function Home() {
       }
       return next;
     });
-  }
-
-  function confirmSignOut() {
-    Alert.alert("Sign out?", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: signOut },
-    ]);
   }
 
   const load = useCallback(async () => {
@@ -295,21 +287,32 @@ export default function Home() {
           </Pressable>
         ) : null}
       </View>
-      {family?.role === "owner" ? (
-        <Text style={styles.inviteCode}>
-          Family code: {family.invite_code}
-        </Text>
+      {family ? (
+        <View style={styles.shareSection}>
+          <Pressable
+            style={styles.shareRow}
+            onPress={() => shareFamily(family.subject_name, family.invite_code)}
+            hitSlop={8}
+          >
+            <Ionicons name="share-outline" size={16} color={colors.accent} />
+            <Text style={styles.shareLinkText}>
+              Share {family.subject_name}'s list
+            </Text>
+          </Pressable>
+          <Text style={styles.inviteCode}>
+            Family code: {family.invite_code}
+          </Text>
+        </View>
       ) : null}
 
-      <Pressable
-        style={styles.signOut}
-        onPress={confirmSignOut}
-        hitSlop={8}
-        accessibilityLabel="Sign out"
-      >
-        <Ionicons name="log-out-outline" size={16} color={colors.textSecondary} />
-        <Text style={styles.signOutText}>Sign out</Text>
-      </Pressable>
+      <View style={styles.switcherLinks}>
+        <Pressable onPress={clearActiveFamily} hitSlop={8}>
+          <Text style={styles.switcherLinkText}>Switch families</Text>
+        </Pressable>
+        <Pressable onPress={clearActiveFamily} hitSlop={8}>
+          <Text style={styles.switcherLinkText}>Create new family</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -431,22 +434,35 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     textAlign: "center",
   },
+  shareSection: {
+    alignItems: "center",
+    paddingTop: 8,
+    gap: 6,
+  },
+  shareRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shareLinkText: {
+    color: colors.accent,
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+  },
   inviteCode: {
-    padding: 16,
     color: colors.textSecondary,
     fontFamily: fonts.regular,
     fontSize: 13,
     textAlign: "center",
   },
-  signOut: {
+  switcherLinks: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingTop: 4,
+    gap: 24,
+    paddingTop: 16,
     paddingBottom: 16,
   },
-  signOutText: {
+  switcherLinkText: {
     color: colors.textSecondary,
     fontSize: 13,
     fontFamily: fonts.regular,
