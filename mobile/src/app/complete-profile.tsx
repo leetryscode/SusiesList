@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "../context/auth-context";
+import { colors, fonts } from "../theme";
 
 export default function CompleteProfile() {
   const { completeProfile } = useAuth();
@@ -47,7 +48,7 @@ export default function CompleteProfile() {
         disabled={isSubmitting || displayName.trim().length === 0}
       >
         {isSubmitting ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onAccent} />
         ) : (
           <Text style={styles.buttonText}>Continue</Text>
         )}
@@ -62,24 +63,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
+    color: colors.textPrimary,
     marginBottom: 24,
     textAlign: "center",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    fontFamily: fonts.regular,
+    color: colors.textPrimary,
+    backgroundColor: colors.card,
     marginBottom: 16,
   },
   button: {
-    backgroundColor: "#208AEF",
+    backgroundColor: colors.accent,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
@@ -88,12 +94,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
   },
   error: {
-    color: "#d33",
+    color: colors.danger,
+    fontFamily: fonts.regular,
     marginTop: 16,
     textAlign: "center",
   },

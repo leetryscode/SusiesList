@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "../context/auth-context";
+import { colors, fonts } from "../theme";
 
 export default function SignIn() {
   const { sendOtp, verifyOtp } = useAuth();
@@ -68,7 +69,7 @@ export default function SignIn() {
             disabled={isSubmitting || email.trim().length === 0}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onAccent} />
             ) : (
               <Text style={styles.buttonText}>Send code</Text>
             )}
@@ -94,7 +95,7 @@ export default function SignIn() {
             disabled={isSubmitting || code.trim().length === 0}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onAccent} />
             ) : (
               <Text style={styles.buttonText}>Verify</Text>
             )}
@@ -123,28 +124,35 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
+    color: colors.textPrimary,
     marginBottom: 32,
     textAlign: "center",
   },
   label: {
     fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    fontFamily: fonts.regular,
+    color: colors.textPrimary,
+    backgroundColor: colors.card,
     marginBottom: 16,
   },
   button: {
-    backgroundColor: "#208AEF",
+    backgroundColor: colors.accent,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
@@ -153,20 +161,22 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
   },
   linkButton: {
     marginTop: 16,
     alignItems: "center",
   },
   linkText: {
-    color: "#208AEF",
+    color: colors.accent,
     fontSize: 14,
+    fontFamily: fonts.regular,
   },
   error: {
-    color: "#d33",
+    color: colors.danger,
+    fontFamily: fonts.regular,
     marginTop: 16,
     textAlign: "center",
   },

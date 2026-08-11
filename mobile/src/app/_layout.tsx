@@ -1,3 +1,9 @@
+import {
+  Nunito_400Regular,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+  useFonts,
+} from "@expo-google-fonts/nunito";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -20,8 +26,14 @@ export default function RootLayout() {
 function RootNavigator() {
   const { session, profile, isLoading: isAuthLoading } = useAuth();
   const { family, isLoading: isFamilyLoading } = useFamily();
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+  });
 
-  const isLoading = isAuthLoading || (!!session && isFamilyLoading);
+  const isLoading =
+    !fontsLoaded || isAuthLoading || (!!session && isFamilyLoading);
 
   useEffect(() => {
     if (!isLoading) {

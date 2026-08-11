@@ -20,6 +20,7 @@ import {
   getItemWithFallback,
   updateItemOffline,
 } from "../../../lib/sync";
+import { colors, fonts } from "../../../theme";
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -162,7 +163,7 @@ export default function ItemDetail() {
               disabled={isSaving || title.trim().length === 0}
             >
               {isSaving ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.onAccent} />
               ) : (
                 <Text style={styles.buttonText}>Save</Text>
               )}
@@ -192,7 +193,7 @@ export default function ItemDetail() {
                   disabled={isDeleting}
                 >
                   {isDeleting ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.onAccent} />
                   ) : (
                     <Text style={styles.buttonText}>Delete</Text>
                   )}
@@ -212,38 +213,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
+    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   author: {
     fontSize: 14,
-    color: "#888",
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
     marginBottom: 24,
   },
   note: {
     fontSize: 16,
+    fontFamily: fonts.regular,
+    color: colors.textPrimary,
     lineHeight: 22,
     marginBottom: 32,
   },
   label: {
     fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    fontFamily: fonts.regular,
+    color: colors.textPrimary,
+    backgroundColor: colors.card,
     marginBottom: 16,
   },
   noteInput: {
@@ -256,7 +268,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    backgroundColor: "#208AEF",
+    backgroundColor: colors.accent,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
@@ -265,22 +277,24 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
   },
   secondaryButton: {
-    backgroundColor: "#eee",
+    backgroundColor: colors.card,
   },
   secondaryButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
+    color: colors.textPrimary,
   },
   deleteButton: {
-    backgroundColor: "#d33",
+    backgroundColor: colors.danger,
   },
   error: {
-    color: "#d33",
+    color: colors.danger,
+    fontFamily: fonts.regular,
     marginTop: 16,
     textAlign: "center",
   },

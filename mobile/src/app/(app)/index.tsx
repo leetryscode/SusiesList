@@ -4,7 +4,7 @@ import {
   ActivityIndicator,
   Pressable,
   RefreshControl,
-  SectionList,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -18,12 +18,42 @@ import {
   loadCachedFamilyData,
   refreshFamilyData,
 } from "../../lib/sync";
+import { colors, fonts } from "../../theme";
 
 type Section = {
   category: Category;
   title: string;
   data: Item[];
 };
+
+/** The four seeded defaults get a hand-picked label ("Music" -> "song" isn't
+ * a grammatical singular, it's a content choice). Custom categories fall
+ * back to a plural-to-singular heuristic, and to "item" when that heuristic
+ * can't confidently strip a plural ending - better a generic label than a
+ * grammatically wrong one. */
+const DEFAULT_ITEM_LABELS: Record<string, string> = {
+  Books: "book",
+  Movies: "movie",
+  Music: "song",
+  Recipes: "recipe",
+};
+
+function singularItemLabel(categoryName: string): string {
+  const known = DEFAULT_ITEM_LABELS[categoryName];
+  if (known) return known;
+
+  const lower = categoryName.toLowerCase();
+  if (lower.endsWith("ies") && lower.length > 3) {
+    return `${lower.slice(0, -3)}y`;
+  }
+  if (/(s|x|z|ch|sh)es$/.test(lower)) {
+    return lower.slice(0, -2);
+  }
+  if (lower.endsWith("s") && !lower.endsWith("ss")) {
+    return lower.slice(0, -1);
+  }
+  return "item";
+}
 
 function toSections(
   categories: Category[],
@@ -87,137 +117,170 @@ export default function Home() {
   }
 
   return (
-    <SectionList
+    <ScrollView
       style={styles.container}
-      sections={sections}
-      keyExtractor={(item) => item.id}
-      refreshControl={
-        <RefreshControl refreshing={false} onRefresh={load} />
-      }
-      renderSectionHeader={({ section }) => (
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{section.title}</Text>
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/new-item",
-                params: { categoryId: section.category.id },
-              })
-            }
-          >
-            <Text style={styles.addLink}>+ Add</Text>
-          </Pressable>
-        </View>
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={false} onRefresh={load} />}
+    >
+      {sections.length === 0 && error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : (
+        sections.map((section) => (
+          <View key={section.category.id} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/new-item",
+                    params: { categoryId: section.category.id },
+                  })
+                }
+              >
+                <Text style={styles.addLink}>
+                  + Add {singularItemLabel(section.title)}
+                </Text>
+              </Pressable>
+            </View>
+            <View style={styles.divider} />
+            {section.data.length === 0 ? (
+              <Text style={styles.empty}>Nothing here yet.</Text>
+            ) : (
+              section.data.map((item, index) => (
+                <Pressable
+                  key={item.id}
+                  style={[
+                    styles.row,
+                    index === section.data.length - 1 && styles.rowLast,
+                  ]}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/item/[id]",
+                      params: { id: item.id },
+                    })
+                  }
+                >
+                  <Text style={styles.rowTitle}>{item.title}</Text>
+                  <Text style={styles.rowAuthor}>
+                    added by {authorNames[item.created_by] ?? "someone"}
+                  </Text>
+                </Pressable>
+              ))
+            )}
+          </View>
+        ))
       )}
-      renderItem={({ item }) => (
-        <Pressable
-          style={styles.row}
-          onPress={() =>
-            router.push({
-              pathname: "/item/[id]",
-              params: { id: item.id },
-            })
-          }
-        >
-          <Text style={styles.rowTitle}>{item.title}</Text>
-          <Text style={styles.rowAuthor}>
-            added by {authorNames[item.created_by] ?? "someone"}
-          </Text>
-        </Pressable>
-      )}
-      renderSectionFooter={({ section }) =>
-        section.data.length === 0 ? (
-          <Text style={styles.empty}>Nothing here yet.</Text>
-        ) : null
-      }
-      ListEmptyComponent={
-        error ? <Text style={styles.error}>{error}</Text> : null
-      }
-      ListFooterComponent={
-        <>
-          <Pressable
-            style={styles.addCategory}
-            onPress={() => router.push("/new-category")}
-          >
-            <Text style={styles.addCategoryText}>+ Add category</Text>
-          </Pressable>
-          {family?.role === "owner" ? (
-            <Text style={styles.inviteCode}>
-              Family code: {family.invite_code}
-            </Text>
-          ) : null}
-        </>
-      }
-    />
+
+      <Pressable
+        style={styles.addCategory}
+        onPress={() => router.push("/new-category")}
+      >
+        <Text style={styles.addCategoryText}>+ Add category</Text>
+      </Pressable>
+      {family?.role === "owner" ? (
+        <Text style={styles.inviteCode}>
+          Family code: {family.invite_code}
+        </Text>
+      ) : null}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    padding: 16,
+    gap: 12,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.background,
   },
-  sectionHeader: {
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: "hidden",
+  },
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 8,
-    backgroundColor: "#fff",
+    paddingVertical: 14,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
+    color: colors.textPrimary,
   },
   addLink: {
-    color: "#208AEF",
+    color: colors.accent,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
   },
   row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#ddd",
+    borderBottomColor: colors.border,
+  },
+  rowLast: {
+    borderBottomWidth: 0,
   },
   rowTitle: {
+    flex: 1,
+    marginRight: 8,
     fontSize: 16,
+    fontFamily: fonts.regular,
+    color: colors.textPrimary,
   },
   rowAuthor: {
+    flexShrink: 0,
     fontSize: 13,
-    color: "#888",
-    marginTop: 2,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
   empty: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
-    color: "#999",
+    paddingVertical: 12,
+    color: colors.textSecondary,
+    fontFamily: fonts.regular,
     fontStyle: "italic",
   },
   addCategory: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 4,
     alignItems: "center",
   },
   addCategoryText: {
-    color: "#208AEF",
-    fontSize: 15,
-    fontWeight: "600",
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontFamily: fonts.regular,
   },
   error: {
     padding: 16,
-    color: "#d33",
+    color: colors.danger,
+    fontFamily: fonts.regular,
     textAlign: "center",
   },
   inviteCode: {
     padding: 16,
-    color: "#888",
+    color: colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 13,
     textAlign: "center",
   },

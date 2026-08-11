@@ -23,7 +23,12 @@
       "Bash(rm -rf dist)",
       "Bash(node -e ' *)",
       "Bash(xargs grep -ln \"createItemOffline\\\\|isNetworkError\\\\|write-queue\\\\|local-cache\")",
-      "Bash(xargs grep -l \"fetchError\\\\|NetworkError\")"
+      "Bash(xargs grep -l \"fetchError\\\\|NetworkError\")",
+      "Bash(grep -rn \"#[0-9a-fA-F]\\\\{3,6\\\\}\" src --include=\"*.tsx\" --include=\"*.ts\")",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('./node_modules/@expo-google-fonts/nunito'\\)\\).filter\\(k => k.startsWith\\('Nunito_'\\)\\).slice\\(0,20\\)\\)\")",
+      "Bash(git diff *)"
     ]
   }
 }

@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../context/auth-context";
 import { useFamily } from "../../context/family-context";
 import { createItemOffline } from "../../lib/sync";
+import { colors, fonts } from "../../theme";
 
 export default function NewItem() {
   const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
@@ -71,7 +72,7 @@ export default function NewItem() {
         disabled={isSubmitting || title.trim().length === 0}
       >
         {isSubmitting ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.onAccent} />
         ) : (
           <Text style={styles.buttonText}>Add</Text>
         )}
@@ -85,18 +86,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
+    backgroundColor: colors.background,
   },
   label: {
     fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+    fontFamily: fonts.regular,
+    color: colors.textPrimary,
+    backgroundColor: colors.card,
     marginBottom: 16,
   },
   noteInput: {
@@ -104,7 +111,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   button: {
-    backgroundColor: "#208AEF",
+    backgroundColor: colors.accent,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
@@ -113,12 +120,13 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.onAccent,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
   },
   error: {
-    color: "#d33",
+    color: colors.danger,
+    fontFamily: fonts.regular,
     marginTop: 16,
     textAlign: "center",
   },
