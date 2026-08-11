@@ -79,6 +79,7 @@ create table categories (
   sort_order int not null default 0,
   created_by uuid references profiles(id),
   created_at timestamptz not null default now(),
+  deleted_at timestamptz,          -- soft delete (added step 5.1, see §16)
   unique (family_id, name)
 );
 
@@ -169,15 +170,15 @@ create policy members_select on family_members for select
 create policy members_delete on family_members for delete
   using (is_family_owner(family_id) or user_id = auth.uid());
 
--- categories
+-- categories: read/insert/update as below. NO delete policy (as of step 5.1,
+-- see §16) - same reasoning as items: deletion goes through
+-- soft_delete_category() only.
 create policy categories_select on categories for select
   using (is_family_member(family_id));
 create policy categories_insert on categories for insert
   with check (is_family_member(family_id) and created_by = auth.uid());
 create policy categories_update on categories for update
   using (created_by = auth.uid() or is_family_owner(family_id));
-create policy categories_delete on categories for delete
-  using (is_family_owner(family_id));
 
 -- items: read within family; author-only edits; NO hard delete policy at all
 create policy items_select on items for select
@@ -257,6 +258,25 @@ begin
   else
     raise exception 'Not permitted';
   end if;
+end;
+$$;
+
+-- soft delete a category and everything in it: family owner only
+-- (added step 5.1, see §16)
+create or replace function public.soft_delete_category(p_category_id uuid)
+returns void language plpgsql security definer
+set search_path = public as $$
+declare fid uuid;
+begin
+  select family_id into fid from categories where id = p_category_id;
+
+  if fid is null then raise exception 'Category not found'; end if;
+  if not is_family_owner(fid) then raise exception 'Not permitted'; end if;
+
+  update items set deleted_at = now()
+  where category_id = p_category_id and deleted_at is null;
+
+  update categories set deleted_at = now() where id = p_category_id;
 end;
 $$;
 ```
@@ -596,3 +616,34 @@ Fixed during this pass: `isNetworkError` in `lib/sync.ts` originally required
 `{ message, ... }` object rather than throwing a real `Error` — so the check never
 matched and every offline write surfaced `"TypeError: Network request failed"` to the
 user instead of queueing. Fixed to check `.message` on any error-shaped value.
+
+---
+
+## 16. Category deletion (step 5.1, decided)
+
+Owners can delete a category, matching the existing "owner may delete anything, may not
+edit others' words" rule already applied to items. Confirmation is required before the
+delete fires, since deleting a category also removes every item inside it.
+
+**Soft delete, not hard delete.** `items.category_id` has `on delete cascade`, so a raw
+`categories` row delete would physically wipe out every item in it — bypassing the
+soft-delete-only design items otherwise get (rule 2 in CLAUDE.md: never hard-delete
+items). Instead, categories got the same treatment: a `deleted_at` column, no delete RLS
+policy (matching items having none), and a `soft_delete_category(p_category_id)` RPC
+(owner-only, security definer) that marks the category's own `deleted_at` **and**
+explicitly sets `deleted_at` on every item in it — not left to be implicitly hidden by the
+category disappearing, since `getItem`/`getItemWithFallback` don't filter by the parent
+category's deletion state, only by the item's own `deleted_at`. Migration:
+`supabase/migrations/20260811120000_soft_delete_categories.sql`.
+
+`listCategories` now filters `.is("deleted_at", null)`, same pattern `listItems` already
+uses.
+
+**Offline-capable**, matching how category creation works: `deleteCategoryOffline` in
+`lib/sync.ts` patches the cache immediately (removing the category and its items) and
+attempts the real RPC call, falling back to the write queue (`"delete-category"` kind) on
+a network-shaped failure — no special case relative to any other write.
+
+**UI**: a small trash icon in each category card's header, visible to the owner only,
+triggers a confirmation `Alert` naming the category and, if non-empty, the item count
+about to go with it.

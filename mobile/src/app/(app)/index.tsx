@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   Pressable,
@@ -17,6 +18,7 @@ import { useFamily } from "../../context/family-context";
 import type { Category } from "../../lib/categories";
 import type { Item } from "../../lib/items";
 import {
+  deleteCategoryOffline,
   flushPendingWrites,
   loadCachedFamilyData,
   refreshFamilyData,
@@ -130,6 +132,56 @@ export default function Home() {
     }
   }, [family]);
 
+  function confirmDeleteCategory(categoryId: string, categoryName: string) {
+    if (!family) return;
+    const itemCount =
+      sections.find((s) => s.category.id === categoryId)?.data.length ?? 0;
+    const message =
+      itemCount > 0
+        ? `This will also delete ${itemCount} item${
+            itemCount === 1 ? "" : "s"
+          } inside "${categoryName}". This can't be undone from the app.`
+        : `Are you sure you want to delete "${categoryName}"?`;
+
+    Alert.alert(`Delete "${categoryName}"?`, message, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const deleteError = await deleteCategoryOffline(
+            family.id,
+            categoryId
+          );
+          if (deleteError) {
+            Alert.alert("Couldn't delete category", deleteError);
+            return;
+          }
+          await load();
+        },
+      },
+    ]);
+  }
+
+  function pickCategoryToRemove() {
+    if (sections.length === 0) return;
+    const cancelButtonIndex = sections.length;
+
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: "Remove which category?",
+        options: [...sections.map((section) => section.title), "Cancel"],
+        destructiveButtonIndex: sections.map((_, index) => index),
+        cancelButtonIndex,
+      },
+      (buttonIndex) => {
+        if (buttonIndex === cancelButtonIndex) return;
+        const section = sections[buttonIndex];
+        confirmDeleteCategory(section.category.id, section.title);
+      }
+    );
+  }
+
   useFocusEffect(
     useCallback(() => {
       load();
@@ -227,12 +279,19 @@ export default function Home() {
         })
       )}
 
-      <Pressable
-        style={styles.addCategory}
-        onPress={() => router.push("/new-category")}
-      >
-        <Text style={styles.addCategoryText}>+ Add category</Text>
-      </Pressable>
+      <View style={styles.categoryActionsRow}>
+        <Pressable
+          style={styles.addCategory}
+          onPress={() => router.push("/new-category")}
+        >
+          <Text style={styles.addCategoryText}>+ Add category</Text>
+        </Pressable>
+        {family?.role === "owner" ? (
+          <Pressable style={styles.addCategory} onPress={pickCategoryToRemove}>
+            <Text style={styles.addCategoryText}>Remove category</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {family?.role === "owner" ? (
         <Text style={styles.inviteCode}>
           Family code: {family.invite_code}
@@ -348,9 +407,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontStyle: "italic",
   },
-  addCategory: {
+  categoryActionsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 24,
     paddingTop: 8,
     paddingBottom: 4,
+  },
+  addCategory: {
     alignItems: "center",
   },
   addCategoryText: {

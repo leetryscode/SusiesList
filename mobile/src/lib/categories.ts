@@ -12,6 +12,7 @@ export async function listCategories(familyId: string): Promise<Category[]> {
     .from("categories")
     .select("id, name, icon, sort_order")
     .eq("family_id", familyId)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true });
 
   if (error) throw error;
@@ -34,6 +35,17 @@ export async function createCategory(
     created_by: authorId,
     name,
     sort_order: sortOrder,
+  });
+  if (error) throw error;
+}
+
+/** Owner-only; soft-deletes the category and every item in it via the
+ * soft_delete_category RPC (see SPEC.md §16) rather than a direct table
+ * delete, since categories have no delete RLS policy - deletion always goes
+ * through the RPC, same as items go through soft_delete_item. */
+export async function deleteCategory(categoryId: string): Promise<void> {
+  const { error } = await supabase.rpc("soft_delete_category", {
+    p_category_id: categoryId,
   });
   if (error) throw error;
 }

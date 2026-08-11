@@ -18,7 +18,8 @@ export type PendingWrite =
       authorId: string;
       name: string;
       sortOrder: number;
-    };
+    }
+  | { kind: "delete-category"; categoryId: string };
 
 const KEY = "susies-list/pending-writes";
 

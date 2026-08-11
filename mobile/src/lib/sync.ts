@@ -2,6 +2,7 @@ import * as Crypto from "expo-crypto";
 
 import {
   createCategory as remoteCreateCategory,
+  deleteCategory as remoteDeleteCategory,
   listCategories,
 } from "./categories";
 import {
@@ -185,6 +186,25 @@ export async function createCategoryOffline(
   return null;
 }
 
+export async function deleteCategoryOffline(
+  familyId: string,
+  categoryId: string
+): Promise<string | null> {
+  await patchCache(familyId, (data) => ({
+    ...data,
+    categories: data.categories.filter((c) => c.id !== categoryId),
+    items: data.items.filter((item) => item.category_id !== categoryId),
+  }));
+
+  try {
+    await remoteDeleteCategory(categoryId);
+  } catch (error) {
+    if (!isNetworkError(error)) return (error as Error).message;
+    await enqueueWrite({ kind: "delete-category", categoryId });
+  }
+  return null;
+}
+
 /** Processes the pending-write queue in order. Stops at the first write that
  * still looks like a network failure (nothing after it can be trusted to
  * fare better right now) but drops - rather than retries forever - any
@@ -208,7 +228,7 @@ export async function flushPendingWrites(): Promise<void> {
         await remoteUpdateItem(next.itemId, next.title, next.note);
       } else if (next.kind === "delete") {
         await remoteDeleteItem(next.itemId);
-      } else {
+      } else if (next.kind === "create-category") {
         await remoteCreateCategory(
           next.categoryId,
           next.familyId,
@@ -216,6 +236,8 @@ export async function flushPendingWrites(): Promise<void> {
           next.name,
           next.sortOrder
         );
+      } else {
+        await remoteDeleteCategory(next.categoryId);
       }
       await removeFirstPendingWrite();
     } catch (error) {
