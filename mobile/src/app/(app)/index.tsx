@@ -83,8 +83,16 @@ export default function Home() {
   );
   const router = useRouter();
 
-  function expandCategory(categoryId: string) {
-    setExpandedCategoryIds((prev) => new Set(prev).add(categoryId));
+  function toggleCategoryExpanded(categoryId: string) {
+    setExpandedCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
   }
 
   function confirmSignOut() {
@@ -147,10 +155,11 @@ export default function Home() {
       ) : (
         sections.map((section) => {
           const isExpanded = expandedCategoryIds.has(section.category.id);
-          const hasMore = section.data.length > COLLAPSED_ITEM_LIMIT && !isExpanded;
-          const visibleItems = hasMore
-            ? section.data.slice(0, COLLAPSED_ITEM_LIMIT)
-            : section.data;
+          const hasOverflow = section.data.length > COLLAPSED_ITEM_LIMIT;
+          const visibleItems =
+            hasOverflow && !isExpanded
+              ? section.data.slice(0, COLLAPSED_ITEM_LIMIT)
+              : section.data;
 
           return (
             <View key={section.category.id} style={styles.card}>
@@ -179,7 +188,7 @@ export default function Home() {
                       key={item.id}
                       style={[
                         styles.row,
-                        !hasMore &&
+                        !hasOverflow &&
                           index === visibleItems.length - 1 &&
                           styles.rowLast,
                       ]}
@@ -199,12 +208,16 @@ export default function Home() {
                       </Text>
                     </Pressable>
                   ))}
-                  {hasMore && (
+                  {hasOverflow && (
                     <Pressable
                       style={styles.viewMore}
-                      onPress={() => expandCategory(section.category.id)}
+                      onPress={() =>
+                        toggleCategoryExpanded(section.category.id)
+                      }
                     >
-                      <Text style={styles.viewMoreText}>View Full List</Text>
+                      <Text style={styles.viewMoreText}>
+                        {isExpanded ? "Collapse" : "View Full List"}
+                      </Text>
                     </Pressable>
                   )}
                 </>
