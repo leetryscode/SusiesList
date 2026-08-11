@@ -1,7 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -10,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useAuth } from "../../context/auth-context";
 import { useFamily } from "../../context/family-context";
 import type { Category } from "../../lib/categories";
 import type { Item } from "../../lib/items";
@@ -69,6 +72,7 @@ function toSections(
 }
 
 export default function Home() {
+  const { signOut } = useAuth();
   const { family } = useFamily();
   const [sections, setSections] = useState<Section[]>([]);
   const [authorNames, setAuthorNames] = useState<Record<string, string>>({});
@@ -81,6 +85,13 @@ export default function Home() {
 
   function expandCategory(categoryId: string) {
     setExpandedCategoryIds((prev) => new Set(prev).add(categoryId));
+  }
+
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: signOut },
+    ]);
   }
 
   const load = useCallback(async () => {
@@ -214,6 +225,16 @@ export default function Home() {
           Family code: {family.invite_code}
         </Text>
       ) : null}
+
+      <Pressable
+        style={styles.signOut}
+        onPress={confirmSignOut}
+        hitSlop={8}
+        accessibilityLabel="Sign out"
+      >
+        <Ionicons name="log-out-outline" size={16} color={colors.textSecondary} />
+        <Text style={styles.signOutText}>Sign out</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -336,5 +357,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 13,
     textAlign: "center",
+  },
+  signOut: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
+  signOutText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontFamily: fonts.regular,
   },
 });

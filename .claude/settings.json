@@ -28,7 +28,11 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:github.com)",
       "Bash(node -e \"console.log\\(Object.keys\\(require\\('./node_modules/@expo-google-fonts/nunito'\\)\\).filter\\(k => k.startsWith\\('Nunito_'\\)\\).slice\\(0,20\\)\\)\")",
-      "Bash(git diff *)"
+      "Bash(git diff *)",
+      "Bash(node -e \"console.log\\(require.resolve\\('@expo/vector-icons/package.json'\\)\\)\")",
+      "Bash(node -e \"try { console.log\\(require.resolve\\('@expo/vector-icons/package.json', {paths:[require\\('path'\\).join\\(process.cwd\\(\\),'node_modules','expo'\\)]}\\)\\) } catch\\(e\\) { console.log\\('not found via expo'\\) }\")",
+      "Bash(npm install *)",
+      "WebFetch(domain:reactnavigation.org)"
     ]
   }
 }
