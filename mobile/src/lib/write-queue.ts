@@ -8,8 +8,15 @@ export type PendingWrite =
       authorId: string;
       title: string;
       note: string;
+      photoPaths: string[];
     }
-  | { kind: "update"; itemId: string; title: string; note: string }
+  | {
+      kind: "update";
+      itemId: string;
+      title: string;
+      note: string;
+      photoPaths: string[];
+    }
   | { kind: "delete"; itemId: string }
   | {
       kind: "create-category";

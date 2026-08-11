@@ -2,40 +2,79 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from "react-native";
 
 import { useAuth } from "../../context/auth-context";
 import { useFamily } from "../../context/family-context";
+import {
+  pickRecipePhotos,
+  uploadRecipePhotos,
+  type PickedPhoto,
+} from "../../lib/photos";
 import { createItemOffline } from "../../lib/sync";
 import { colors, fonts } from "../../theme";
 
 export default function NewItem() {
-  const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
+  const { categoryId, categoryName } = useLocalSearchParams<{
+    categoryId: string;
+    categoryName: string;
+  }>();
   const { session } = useAuth();
   const { family } = useFamily();
   const router = useRouter();
 
+  const isRecipe = categoryName === "Recipes";
+
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
+  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function handlePickPhotos() {
+    const picked = await pickRecipePhotos();
+    if (picked.length > 0) setPhotos((prev) => [...prev, ...picked]);
+  }
+
+  function removePhoto(index: number) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleAdd() {
     if (!session || !family || !categoryId) return;
     setError(null);
     setIsSubmitting(true);
+
+    let photoPaths: string[] = [];
+    if (photos.length > 0) {
+      try {
+        photoPaths = await uploadRecipePhotos(family.id, photos);
+      } catch (uploadError) {
+        setIsSubmitting(false);
+        setError(
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Couldn't upload photos. Check your connection and try again."
+        );
+        return;
+      }
+    }
+
     const submitError = await createItemOffline(
       family.id,
       categoryId,
       session.user.id,
       title.trim(),
-      note.trim()
+      note.trim(),
+      photoPaths
     );
     setIsSubmitting(false);
     if (submitError) {
@@ -66,6 +105,40 @@ export default function NewItem() {
         multiline
         editable={!isSubmitting}
       />
+      {isRecipe && (
+        <>
+          <Text style={styles.label}>Photos (optional)</Text>
+          {photos.length > 0 && (
+            <View style={styles.photoGrid}>
+              {photos.map((photo, index) => (
+                <View key={index} style={styles.photoThumbWrap}>
+                  <Image
+                    source={{
+                      uri: `data:${photo.mimeType};base64,${photo.base64}`,
+                    }}
+                    style={styles.photoThumb}
+                  />
+                  <Pressable
+                    style={styles.removeThumbButton}
+                    onPress={() => removePhoto(index)}
+                    disabled={isSubmitting}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.removeThumbText}>×</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+          <Pressable
+            style={styles.photoButton}
+            onPress={handlePickPhotos}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.photoButtonText}>+ Add Photo</Text>
+          </Pressable>
+        </>
+      )}
       <Pressable
         style={[styles.button, isSubmitting && styles.buttonDisabled]}
         onPress={handleAdd}
@@ -109,6 +182,52 @@ const styles = StyleSheet.create({
   noteInput: {
     minHeight: 100,
     textAlignVertical: "top",
+  },
+  photoButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    backgroundColor: colors.card,
+    marginBottom: 16,
+  },
+  photoButtonText: {
+    color: colors.accent,
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+  },
+  photoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 12,
+  },
+  photoThumbWrap: {
+    position: "relative",
+  },
+  photoThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: colors.card,
+  },
+  removeThumbButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.danger,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeThumbText: {
+    color: colors.onAccent,
+    fontSize: 13,
+    lineHeight: 14,
+    fontFamily: fonts.semiBold,
   },
   button: {
     backgroundColor: colors.accent,

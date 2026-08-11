@@ -221,7 +221,10 @@ export default function Home() {
                   onPress={() =>
                     router.push({
                       pathname: "/new-item",
-                      params: { categoryId: section.category.id },
+                      params: {
+                        categoryId: section.category.id,
+                        categoryName: section.title,
+                      },
                     })
                   }
                 >

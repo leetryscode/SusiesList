@@ -89,6 +89,7 @@ create table items (
   category_id uuid not null references categories on delete cascade,
   title       text not null,
   note        text,
+  photo_path  text,                 -- Storage object path, Recipes-only UI (see §17)
   created_by  uuid not null references profiles(id),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now(),
@@ -644,6 +645,67 @@ uses.
 attempts the real RPC call, falling back to the write queue (`"delete-category"` kind) on
 a network-shaped failure — no special case relative to any other write.
 
-**UI**: a small trash icon in each category card's header, visible to the owner only,
-triggers a confirmation `Alert` naming the category and, if non-empty, the item count
-about to go with it.
+**UI**: a "Remove category" button next to "+ Add category" at the bottom of the list
+screen, visible to the owner only. Tapping it opens an `ActionSheetIOS` listing every
+category by name (simplest selection mechanism - no per-card icons, no new screen), and
+picking one triggers a confirmation `Alert` naming the category and, if non-empty, the
+item count about to go with it. (Per-card trash icons were tried first and dropped for
+being too visually prominent against the rest of the card.)
+
+---
+
+## 17. Recipe photos (step 5.2, decided)
+
+Recipes-only: items in a category literally named `"Recipes"` can attach one or more
+photos (camera or library) alongside the note. This is a **UI-only** gate, not
+DB-enforced — category names are per-family editable text, not a fixed enum, so there's no
+CHECK constraint tying `photo_paths` to a category type. `new-item.tsx` checks
+`categoryName === "Recipes"` before showing the photo picker, the same string
+`singularItemLabel` already special-cases.
+
+**Storage**: a private Supabase Storage bucket, `recipe-photos`, scoped by family the same
+way every table already is — path is `{family_id}/{filename}.{ext}`, RLS on
+`storage.objects` reuses the existing `is_family_member()` helper (§4) against
+`(storage.foldername(name))[1]::uuid`. `items.photo_paths` (`text[]`) stores the object
+paths (not public URLs, since the bucket is private); display resolves each to a signed
+URL on demand. Migration: `supabase/migrations/20260812090000_recipe_photos.sql`.
+
+**Multiple photos (added right after the first pass).** Went from a single `photo_path`
+column to `photo_paths text[]` — one photo per recipe turned out not to be enough in
+practice. Migration `20260813090000_multiple_recipe_photos.sql` adds the array column,
+backfills any existing single photo into it, then drops the old column. Picking supports
+both: the camera always returns at most one photo (no such thing as multi-shot capture),
+but the library picker uses `allowsMultipleSelection` and can return several at once;
+either way, the "+ Add Photo" button can be tapped repeatedly to keep adding more.
+Editing an item now supports both removing existing photos *and* adding new ones in the
+same session (each pending add/remove is local state until Save commits it) — worth
+knowing if this ever needed re-reading: the first version of edit-mode photo handling only
+supported removal, which is why this note exists.
+
+**Flat path, no per-item folder.** Considered `{family_id}/{item_id}/{filename}` for
+organization, but nothing in RLS needs the item id (only the family_id segment is
+checked), and coordinating the item's client-generated id between the new-item screen and
+the upload call added complexity for no real benefit at this scale. Every photo gets its
+own random filename instead, so multiple photos per item never collide.
+
+**No update/delete storage policy.** Removing a photo (or replacing the set) just changes
+`items.photo_paths`; the underlying Storage objects are left orphaned rather than
+explicitly cleaned up. Same tradeoff already made elsewhere in this project (small
+family-scale data, not worth the extra RLS policy and cleanup logic yet). Soft-deleting an
+item or category never touches its photos either, consistent with "never hard-delete" — an
+orphaned photo for a soft-deleted item is not a bug.
+
+**Online-only for this pass (deliberate, low priority to revisit).** `sync.ts`'s
+offline-write queue is built for small JSON payloads persisted to AsyncStorage; a binary
+photo upload doesn't fit that shape the same way item/category writes do. Rather than
+build offline photo queuing now, attaching a photo requires connectivity at the moment of
+tapping "Add" — title/note still work offline exactly as before. **Future work, not
+urgent**: queue picked-but-unuploaded photos (e.g. persist the local URI + pending upload
+state) so a recipe photo taken in airplane mode uploads once reconnected, matching how
+every other write already behaves.
+
+**Expo Go**: confirmed via current SDK docs that `expo-image-picker` (camera and library)
+works in Expo Go — no dev client required for this feature specifically, unlike Sign in
+with Apple. The `app.json` plugin's custom permission-prompt strings won't actually apply
+until a real dev/production build exists (Expo Go shows its own generic prompt text
+instead) — cosmetic only, not a blocker.

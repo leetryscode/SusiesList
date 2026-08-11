@@ -31,6 +31,13 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Susie's List to access your photos to attach a recipe photo.",
+          "cameraPermission": "Allow Susie's List to access your camera to take a recipe photo."
+        }
       ]
     ],
     "experiments": {

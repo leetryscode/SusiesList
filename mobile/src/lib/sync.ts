@@ -75,7 +75,8 @@ export async function createItemOffline(
   categoryId: string,
   authorId: string,
   title: string,
-  note: string
+  note: string,
+  photoPaths: string[] = []
 ): Promise<string | null> {
   const itemId = Crypto.randomUUID();
   const item: Item = {
@@ -83,6 +84,7 @@ export async function createItemOffline(
     category_id: categoryId,
     title,
     note: note.length > 0 ? note : null,
+    photo_paths: photoPaths,
     created_by: authorId,
     created_at: new Date().toISOString(),
   };
@@ -93,7 +95,7 @@ export async function createItemOffline(
   }));
 
   try {
-    await remoteCreateItem(itemId, categoryId, authorId, title, note);
+    await remoteCreateItem(itemId, categoryId, authorId, title, note, photoPaths);
   } catch (error) {
     if (!isNetworkError(error)) return (error as Error).message;
     await enqueueWrite({
@@ -103,6 +105,7 @@ export async function createItemOffline(
       authorId,
       title,
       note,
+      photoPaths,
     });
   }
   return null;
@@ -112,22 +115,28 @@ export async function updateItemOffline(
   familyId: string,
   itemId: string,
   title: string,
-  note: string
+  note: string,
+  photoPaths: string[]
 ): Promise<string | null> {
   await patchCache(familyId, (data) => ({
     ...data,
     items: data.items.map((item) =>
       item.id === itemId
-        ? { ...item, title, note: note.length > 0 ? note : null }
+        ? {
+            ...item,
+            title,
+            note: note.length > 0 ? note : null,
+            photo_paths: photoPaths,
+          }
         : item
     ),
   }));
 
   try {
-    await remoteUpdateItem(itemId, title, note);
+    await remoteUpdateItem(itemId, title, note, photoPaths);
   } catch (error) {
     if (!isNetworkError(error)) return (error as Error).message;
-    await enqueueWrite({ kind: "update", itemId, title, note });
+    await enqueueWrite({ kind: "update", itemId, title, note, photoPaths });
   }
   return null;
 }
@@ -222,10 +231,11 @@ export async function flushPendingWrites(): Promise<void> {
           next.categoryId,
           next.authorId,
           next.title,
-          next.note
+          next.note,
+          next.photoPaths
         );
       } else if (next.kind === "update") {
-        await remoteUpdateItem(next.itemId, next.title, next.note);
+        await remoteUpdateItem(next.itemId, next.title, next.note, next.photoPaths);
       } else if (next.kind === "delete") {
         await remoteDeleteItem(next.itemId);
       } else if (next.kind === "create-category") {

@@ -36,7 +36,8 @@
       "Bash(cd .. && find supabase -type f | sort)",
       "Read(//c/Users/leewi/**)",
       "Bash(npx --yes supabase --version)",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "Bash(echo \"EXIT:$?\")"
     ]
   }
 }
