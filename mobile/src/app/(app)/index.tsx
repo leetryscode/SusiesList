@@ -26,6 +26,8 @@ type Section = {
   data: Item[];
 };
 
+const COLLAPSED_ITEM_LIMIT = 3;
+
 /** The four seeded defaults get a hand-picked label ("Music" -> "song" isn't
  * a grammatical singular, it's a content choice). Custom categories fall
  * back to a plural-to-singular heuristic, and to "item" when that heuristic
@@ -72,7 +74,14 @@ export default function Home() {
   const [authorNames, setAuthorNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
+    new Set()
+  );
   const router = useRouter();
+
+  function expandCategory(categoryId: string) {
+    setExpandedCategoryIds((prev) => new Set(prev).add(categoryId));
+  }
 
   const load = useCallback(async () => {
     if (!family) return;
@@ -125,53 +134,73 @@ export default function Home() {
       {sections.length === 0 && error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
-        sections.map((section) => (
-          <View key={section.category.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: "/new-item",
-                    params: { categoryId: section.category.id },
-                  })
-                }
-              >
-                <Text style={styles.addLink}>
-                  + Add {singularItemLabel(section.title)}
-                </Text>
-              </Pressable>
-            </View>
-            <View style={styles.divider} />
-            {section.data.length === 0 ? (
-              <Text style={styles.empty}>Nothing here yet.</Text>
-            ) : (
-              section.data.map((item, index) => (
+        sections.map((section) => {
+          const isExpanded = expandedCategoryIds.has(section.category.id);
+          const hasMore = section.data.length > COLLAPSED_ITEM_LIMIT && !isExpanded;
+          const visibleItems = hasMore
+            ? section.data.slice(0, COLLAPSED_ITEM_LIMIT)
+            : section.data;
+
+          return (
+            <View key={section.category.id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.sectionTitle}>{section.title}</Text>
                 <Pressable
-                  key={item.id}
-                  style={[
-                    styles.row,
-                    index === section.data.length - 1 && styles.rowLast,
-                  ]}
                   onPress={() =>
                     router.push({
-                      pathname: "/item/[id]",
-                      params: { id: item.id },
+                      pathname: "/new-item",
+                      params: { categoryId: section.category.id },
                     })
                   }
                 >
-                  <View style={styles.titleRow}>
-                    <Text style={styles.rowTitle}>{item.title}</Text>
-                    {item.note ? <View style={styles.noteDot} /> : null}
-                  </View>
-                  <Text style={styles.rowAuthor}>
-                    added by {authorNames[item.created_by] ?? "someone"}
+                  <Text style={styles.addLink}>
+                    + Add {singularItemLabel(section.title)}
                   </Text>
                 </Pressable>
-              ))
-            )}
-          </View>
-        ))
+              </View>
+              <View style={styles.divider} />
+              {section.data.length === 0 ? (
+                <Text style={styles.empty}>Nothing here yet.</Text>
+              ) : (
+                <>
+                  {visibleItems.map((item, index) => (
+                    <Pressable
+                      key={item.id}
+                      style={[
+                        styles.row,
+                        !hasMore &&
+                          index === visibleItems.length - 1 &&
+                          styles.rowLast,
+                      ]}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/item/[id]",
+                          params: { id: item.id },
+                        })
+                      }
+                    >
+                      <View style={styles.titleRow}>
+                        <Text style={styles.rowTitle}>{item.title}</Text>
+                        {item.note ? <View style={styles.noteDot} /> : null}
+                      </View>
+                      <Text style={styles.rowAuthor}>
+                        added by {authorNames[item.created_by] ?? "someone"}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  {hasMore && (
+                    <Pressable
+                      style={styles.viewMore}
+                      onPress={() => expandCategory(section.category.id)}
+                    >
+                      <Text style={styles.viewMoreText}>View Full List</Text>
+                    </Pressable>
+                  )}
+                </>
+              )}
+            </View>
+          );
+        })
       )}
 
       <Pressable
@@ -243,6 +272,16 @@ const styles = StyleSheet.create({
   },
   rowLast: {
     borderBottomWidth: 0,
+  },
+  viewMore: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  viewMoreText: {
+    color: colors.accent,
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
   },
   titleRow: {
     flex: 1,
