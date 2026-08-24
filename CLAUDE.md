@@ -49,10 +49,15 @@ creation, and sign-out are confirmed on a real device; and family create/join by
 confirmed too (created a family with one account, signed out, joined the same family with
 a second account by code — no picker).
 
-**Still genuinely outstanding: real isolation testing.** What's confirmed so far is two
-accounts *in the same* family. Not yet confirmed: a *third*, unrelated account (no
-membership, no code used) truly cannot see this family's data through any query — the RLS
-policies are written to guarantee this, but it hasn't been exercised live.
+**Isolation confirmed 2026-08-24**, directly against the real API rather than just the app
+UI: created a genuinely new, unrelated auth account (no membership, no code used) via
+Supabase's admin API, signed in as it for a real user-scoped session token, and confirmed
+`families`/`family_members`/`categories` all return empty for that account — including
+targeted reads of the one real family by its known id and known invite code, not just an
+unfiltered list. The one deliberate exception, `family_name_by_code` (used by the
+join-confirm preview), correctly still works and returns nothing else. `items` wasn't
+separately exercised (would have needed pulling real item content via the service-role
+key, judged not worth it given every other table held). Test account deleted afterward.
 
 Step 5 (categories and items) is also done and confirmed on device: items added and
 grouped correctly, edit restricted to the author, delete working for the owner on items
@@ -131,9 +136,11 @@ is still real testing debt, not superseded by "it launches now."
 
 - [ ] Swap Sign in with Apple in for email OTP (step 3's deferred half, §12) — now
       unblocked since a real dev-build capability exists.
-- [ ] Re-test sharing (`shareApp`/`shareFamily`, §18) on the real build — the custom
-      `susieslist://` scheme only registers with the OS in a dev client or standalone
-      build, so this has been untestable until now (see SPEC.md §18's status note).
+- [ ] Test sharing on the real build (§13/§18) — `shareFamily` now sends a real Universal
+      Link (`https://leetryscode.github.io/join/<code>`, built 2026-08-24) instead of the
+      untappable `susieslist://` scheme, but this needs a build that actually includes the
+      new `associatedDomains` entitlement (#10+) before a device-with-app-installed tap can
+      be confirmed to open the app rather than the browser fallback page.
 - [ ] App Store screenshots (not needed for TestFlight, but required before public/
       unlisted App Store release) — plan is to capture natively on a real iPhone from
       the TestFlight build rather than set up simulator-based automation.
@@ -141,9 +148,6 @@ is still real testing debt, not superseded by "it launches now."
 **Not Apple-blocked — can be picked up anytime, still outstanding regardless of build
 status:**
 
-- [ ] The original isolation test (build order step 1): confirm a *third*, unrelated
-      account (no membership, no code used) truly sees nothing of an existing family. Only
-      two accounts *in the same* family have ever been tested.
 - [ ] Offline item-detail viewing in airplane mode for an item created offline and not yet
       synced (§15's one remaining known gap — create/edit/delete were exercised, this read
       path wasn't).

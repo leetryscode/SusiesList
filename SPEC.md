@@ -491,7 +491,7 @@ The invite-code inputs are plain freeform text (no numeric/alpha format enforced
 `invite_code` in the schema is already unconstrained text, so switching from numeric codes
 to letter codes later needs no app changes, just a different string typed at creation time.
 
-### Deep link (custom scheme only)
+### Deep link
 
 `app.json` `scheme` changed from the scaffold default (`mobile`) to `susieslist`, matching
 the `susieslist://join/SUSIE` example in §7.
@@ -507,14 +507,28 @@ the `susieslist://join/SUSIE` example in §7.
 
 **Confirmed 2026-08-09** on a real device: created a family with one account, signed out,
 signed in with a second account, and joined the same family by typing the code — landed
-straight in with no picker. Note this confirms *joining*, not isolation — a third,
-unrelated account has not yet been used to confirm it sees nothing of this family. That
-isolation test is still the one outstanding item from build order step 1.
+straight in with no picker. Note this confirms *joining*, not isolation.
 
-**Universal links (`https://...`) are deferred, not built.** They need a hosted domain
-serving an Apple App Site Association file plus the associated-domains entitlement,
-neither of which exist yet. Custom-scheme links work for texting an invite today; revisit
-once there's a real domain to host AASA on.
+**Isolation confirmed 2026-08-24**, directly against the real API: a genuinely new,
+unrelated account (no membership, no code used) got empty results from
+`families`/`family_members`/`categories`, including targeted reads of the real family by
+its known id and known invite code — not just an unfiltered list coming back empty by
+coincidence. Build order step 1's outstanding item is closed.
+
+**Universal links (`https://...`) are built, 2026-08-24 — not yet exercised on device.**
+`ios.associatedDomains: ["applinks:leetryscode.github.io"]` in `app.json`, plus an
+`apple-app-site-association` file served from a small static site at that GitHub Pages
+domain (a separate repo, `leetryscode/leetryscode.github.io` — not part of this codebase).
+Deliberately *not* hosted on `orbitintroductions.com` despite it already being a verified
+domain (§12) — that's the marketing site for an unrelated product (Orbit), and mixing
+Susie's List invite links into it was explicitly rejected. `lib/share.ts`'s `shareFamily`
+now shares `https://leetryscode.github.io/join/<code>` instead of the `susieslist://`
+custom scheme — a real link Mail/Messages will actually render as tappable, and one that
+falls back to a friendly webpage (also on that same static site) rather than doing nothing
+for a recipient without the app yet. The code is still spelled out in the message too:
+there's no deferred deep linking, so a link tapped before install doesn't survive it.
+**Not yet confirmed**: that a Universal Link actually opens the app on a device that has
+it installed (needs build #10+; associatedDomains wasn't in any build before this).
 
 ---
 
