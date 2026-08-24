@@ -7,7 +7,7 @@ import {
   type PropsWithChildren,
 } from "react";
 
-import { supabase } from "../lib/supabase";
+import { supabase, syncAutoRefreshWithAppState } from "../lib/supabase";
 
 export type Profile = {
   id: string;
@@ -55,6 +55,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let isMounted = true;
+    const unsubscribeAppState = syncAutoRefreshWithAppState();
 
     async function loadProfileForSession(nextSession: Session | null) {
       if (!nextSession) {
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       isMounted = false;
       subscription.subscription.unsubscribe();
+      unsubscribeAppState();
     };
   }, []);
 

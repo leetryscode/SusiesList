@@ -23,12 +23,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Supabase only keeps refreshing the session while something is listening,
-// so tie it to app foreground/background instead of always running.
-AppState.addEventListener("change", (state) => {
-  if (state === "active") {
-    supabase.auth.startAutoRefresh();
-  } else {
-    supabase.auth.stopAutoRefresh();
-  }
-});
+/** Supabase only keeps refreshing the session while something is listening,
+ * so tie it to app foreground/background instead of always running. Called
+ * from a useEffect (not module scope) so the native AppState subscription
+ * is registered after mount rather than during initial bundle evaluation. */
+export function syncAutoRefreshWithAppState(): () => void {
+  const subscription = AppState.addEventListener("change", (state) => {
+    if (state === "active") {
+      supabase.auth.startAutoRefresh();
+    } else {
+      supabase.auth.stopAutoRefresh();
+    }
+  });
+  return () => subscription.remove();
+}
