@@ -21,9 +21,10 @@ import { colors, fonts } from "../theme";
 type ActiveForm = "create" | "join" | null;
 
 export default function FamilySwitcher() {
-  const { signOut } = useAuth();
+  const { signOut, deleteAccount } = useAuth();
   const { families, isLoading, setActiveFamily } = useFamily();
   const [activeForm, setActiveForm] = useState<ActiveForm>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   function toggleForm(form: Exclude<ActiveForm, null>) {
     setActiveForm((current) => (current === form ? null : form));
@@ -34,6 +35,26 @@ export default function FamilySwitcher() {
       { text: "Cancel", style: "cancel" },
       { text: "Log out", style: "destructive", onPress: signOut },
     ]);
+  }
+
+  function confirmDeleteAccount() {
+    Alert.alert(
+      "Delete your account?",
+      "This permanently deletes your account and removes you from every family list. This can't be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete my account",
+          style: "destructive",
+          onPress: async () => {
+            setIsDeleting(true);
+            const error = await deleteAccount();
+            setIsDeleting(false);
+            if (error) Alert.alert("Couldn't delete account", error);
+          },
+        },
+      ]
+    );
   }
 
   return (
@@ -119,6 +140,25 @@ export default function FamilySwitcher() {
               color={colors.textSecondary}
             />
             <Text style={styles.footerText}>Log out</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.footerRow}
+            onPress={confirmDeleteAccount}
+            disabled={isDeleting}
+            hitSlop={8}
+            accessibilityLabel="Delete my account"
+          >
+            {isDeleting ? (
+              <ActivityIndicator size="small" color={colors.danger} />
+            ) : (
+              <Ionicons
+                name="trash-outline"
+                size={16}
+                color={colors.danger}
+              />
+            )}
+            <Text style={styles.deleteAccountText}>Delete my account</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -209,6 +249,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: colors.textSecondary,
+    fontSize: 14,
+    fontFamily: fonts.regular,
+  },
+  deleteAccountText: {
+    color: colors.danger,
     fontSize: 14,
     fontFamily: fonts.regular,
   },

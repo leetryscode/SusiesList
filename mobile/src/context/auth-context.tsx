@@ -23,6 +23,7 @@ type AuthContextValue = {
   verifyOtp: (email: string, token: string) => Promise<string | null>;
   completeProfile: (displayName: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -119,6 +120,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await supabase.auth.signOut();
   }
 
+  async function deleteAccount() {
+    const { error } = await supabase.rpc("delete_own_account");
+    if (error) return error.message;
+    await supabase.auth.signOut();
+    return null;
+  }
+
   return (
     <AuthContext
       value={{
@@ -129,6 +137,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         verifyOtp,
         completeProfile,
         signOut,
+        deleteAccount,
       }}
     >
       {children}
