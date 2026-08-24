@@ -1,4 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   createContext,
   use,
@@ -21,6 +22,7 @@ type AuthContextValue = {
   isLoading: boolean;
   sendOtp: (email: string) => Promise<string | null>;
   verifyOtp: (email: string, token: string) => Promise<string | null>;
+  signInWithApple: () => Promise<string | null>;
   completeProfile: (displayName: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<string | null>;
@@ -116,6 +118,40 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return null;
   }
 
+  async function signInWithApple() {
+    let credential: AppleAuthentication.AppleAuthenticationCredential;
+    try {
+      credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+    } catch (err) {
+      // The system Apple sign-in sheet has its own cancel button - a user
+      // backing out of it isn't an error worth surfacing.
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        err.code === "ERR_REQUEST_CANCELED"
+      ) {
+        return null;
+      }
+      return "Apple sign-in failed.";
+    }
+
+    if (!credential.identityToken) {
+      return "Apple didn't return a sign-in token.";
+    }
+
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: "apple",
+      token: credential.identityToken,
+    });
+    return error?.message ?? null;
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
@@ -135,6 +171,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         isLoading,
         sendOtp,
         verifyOtp,
+        signInWithApple,
         completeProfile,
         signOut,
         deleteAccount,

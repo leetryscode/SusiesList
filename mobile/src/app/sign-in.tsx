@@ -1,3 +1,4 @@
+import * as AppleAuthentication from "expo-apple-authentication";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -14,7 +15,7 @@ import { useAuth } from "../context/auth-context";
 import { colors, fonts } from "../theme";
 
 export default function SignIn() {
-  const { sendOtp, verifyOtp } = useAuth();
+  const { sendOtp, verifyOtp, signInWithApple } = useAuth();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -31,6 +32,14 @@ export default function SignIn() {
       return;
     }
     setCodeSent(true);
+  }
+
+  async function handleAppleSignIn() {
+    setError(null);
+    setIsSubmitting(true);
+    const appleError = await signInWithApple();
+    setIsSubmitting(false);
+    if (appleError) setError(appleError);
   }
 
   async function handleVerifyCode() {
@@ -52,6 +61,27 @@ export default function SignIn() {
 
       {!codeSent ? (
         <>
+          {Platform.OS === "ios" && (
+            <>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={
+                  AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+                }
+                buttonStyle={
+                  AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={8}
+                style={styles.appleButton}
+                onPress={handleAppleSignIn}
+              />
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            </>
+          )}
+
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
@@ -138,6 +168,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     color: colors.textPrimary,
     marginBottom: 8,
+  },
+  appleButton: {
+    height: 48,
+    marginBottom: 16,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontFamily: fonts.regular,
+    marginHorizontal: 12,
   },
   input: {
     borderWidth: 1,
