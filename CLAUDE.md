@@ -139,7 +139,7 @@ that — tried a fresh Gmail for it first and Google's own device-verification c
 blocked it before it even reached Apple). Native-only flow, no Services ID:
 `expo-apple-authentication` gets the identity token, `supabase.auth.signInWithIdToken()`
 exchanges it for a session. First-login profile creation is unchanged regardless of
-provider. **Not yet tested on device** — needs build #17+.
+provider. **Confirmed working on device 2026-08-24, build #17.**
 
 **Getting both this and Associated Domains through EAS's non-interactive credential
 system took four build failures to fully resolve — worth recording so it isn't
@@ -170,6 +170,9 @@ re-discovered the hard way next time a new capability gets added to `app.json`:*
 
 **Still to do:**
 
+- [ ] Test account deletion on a real device (with a throwaway account, not a real one) —
+      the RPC and UI are shipped and the migration is live on Supabase, but it's never
+      been exercised end-to-end, including the sole-owner-with-other-members block.
 - [ ] Test sharing on the real build (§13/§18) — `shareFamily` now sends a real Universal
       Link (`https://leetryscode.github.io/join/<code>`) instead of the untappable
       `susieslist://` scheme. Build #17+ is the first to actually carry the
