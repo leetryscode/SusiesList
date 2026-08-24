@@ -132,15 +132,49 @@ Once past the crash, the app itself came up clean — sign-in screen rendered, n
 issues surfaced yet. Still only exercised minimally on this one build; the checklist below
 is still real testing debt, not superseded by "it launches now."
 
+**Sign in with Apple shipped 2026-08-24, alongside email OTP (not replacing it).** Solves
+the App Review sign-in problem properly: reviewers always have a working Apple ID, so
+there's no demo-account/inbox-sharing needed (email OTP alone would have required exactly
+that — tried a fresh Gmail for it first and Google's own device-verification challenges
+blocked it before it even reached Apple). Native-only flow, no Services ID:
+`expo-apple-authentication` gets the identity token, `supabase.auth.signInWithIdToken()`
+exchanges it for a session. First-login profile creation is unchanged regardless of
+provider. **Not yet tested on device** — needs build #17+.
+
+**Getting both this and Associated Domains through EAS's non-interactive credential
+system took four build failures to fully resolve — worth recording so it isn't
+re-discovered the hard way next time a new capability gets added to `app.json`:**
+1. Adding a *new* native capability (Associated Domains, then also Sign in with Apple)
+   to `app.json` means the existing EAS-managed provisioning profile no longer matches
+   and every build fails with "doesn't support the X capability" until it's regenerated.
+2. `eas credentials -p ios` → "All: Set up all the required credentials" does **not**
+   detect or fix this — it only confirms a profile *exists*, not that its capabilities
+   still match `app.json` (confirmed by the profile's own `Updated` timestamp not moving
+   across three separate "successful" interactive syncs).
+3. What actually works: delete the stale profile outright (`eas credentials -p ios` →
+   Build Credentials → "Provisioning Profile: Delete one from your project"), forcing a
+   genuinely fresh one on the next build. Deleting it doesn't touch anything already
+   submitted/installed, or anything in App Store Connect (different system entirely).
+4. A **fresh, non-interactive** build additionally needs the App Store Connect API key
+   authenticated in the *build* environment specifically — the one in `eas.json` is only
+   wired to `submit`. Pass it as env vars to the `eas build` command itself (runs locally,
+   not on EAS's cloud runner): `EXPO_ASC_API_KEY_PATH`, `EXPO_ASC_KEY_ID`,
+   `EXPO_ASC_ISSUER_ID`, `EXPO_APPLE_TEAM_ID` (`7VN35QQ8V7`), `EXPO_APPLE_TEAM_TYPE`
+   (`COMPANY_OR_ORGANIZATION`) — same Key ID/Issuer ID already in `eas.json`'s
+   `submit.production.ios` block.
+5. Each new capability *also* needs enabling directly on the App ID itself
+   (developer.apple.com → Identifiers → `com.susieslist.app` → Capabilities) — EAS only
+   auto-enabled Sign in with Apple's simple on/off capability, not Associated Domains
+   (which carries actual domain configuration). Check both are enabled before assuming a
+   credentials problem is EAS's to fix.
+
 **Still to do:**
 
-- [ ] Swap Sign in with Apple in for email OTP (step 3's deferred half, §12) — now
-      unblocked since a real dev-build capability exists.
 - [ ] Test sharing on the real build (§13/§18) — `shareFamily` now sends a real Universal
-      Link (`https://leetryscode.github.io/join/<code>`, built 2026-08-24) instead of the
-      untappable `susieslist://` scheme, but this needs a build that actually includes the
-      new `associatedDomains` entitlement (#10+) before a device-with-app-installed tap can
-      be confirmed to open the app rather than the browser fallback page.
+      Link (`https://leetryscode.github.io/join/<code>`) instead of the untappable
+      `susieslist://` scheme. Build #17+ is the first to actually carry the
+      `associatedDomains` entitlement - not yet confirmed that tapping it on a device with
+      the app installed opens the app rather than the browser fallback page.
 - [ ] App Store screenshots (not needed for TestFlight, but required before public/
       unlisted App Store release) — plan is to capture natively on a real iPhone from
       the TestFlight build rather than set up simulator-based automation.
