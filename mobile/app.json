@@ -14,7 +14,7 @@
       "android"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.susieslist.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
