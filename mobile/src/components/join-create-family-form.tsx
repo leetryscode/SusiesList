@@ -110,7 +110,7 @@ export function JoinCreateFamilyForm({
             onChangeText={setNewCode}
             autoCapitalize="characters"
             autoCorrect={false}
-            placeholder="SUSIE"
+            placeholder="Family Code"
             editable={!isCreating}
           />
           <Pressable
