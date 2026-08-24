@@ -18,8 +18,7 @@
       "bundleIdentifier": "com.susieslist.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "associatedDomains": ["applinks:leetryscode.github.io"]
+      }
     },
     "android": {
       "package": "com.susieslist.app",
