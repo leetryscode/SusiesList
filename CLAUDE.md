@@ -75,3 +75,54 @@ to (previously silently dropped for anyone past onboarding). The
 Supabase project, and the app type-checks clean, but none of it has been exercised on
 device yet — see SPEC.md §18 for what changed and the specific scenarios still to test
 before calling it done.
+
+## ▶ Resumed 2026-08-22 — Apple org account approved
+
+The Apple Developer account cleared organization verification on 2026-08-22, unblocking
+the build. Since then:
+
+- EAS project created and linked: `@leetryscode/susies-list`
+  (`mobile/app.json`'s `extra.eas.projectId`). App name/slug set to "Susie's List" /
+  `susies-list`; iOS bundle id and Android package both `com.susieslist.app`.
+- `mobile/eas.json` generated. iOS credentials are EAS-managed: a Distribution
+  Certificate and Provisioning Profile exist under Apple Team `7VN35QQ8V7`, expiring
+  2027-08-22. Authentication for builds/submits uses an App Store Connect API Key
+  (Key ID `QJ34DCMM6J`, file at `mobile/AuthKey_QJ34DCMM6J.p8`, gitignored) referenced
+  from `eas.json`'s `submit.production.ios` block — fully non-interactive going forward.
+- Fixed a pre-existing, unrelated bug found along the way: `mobile/package-lock.json` was
+  out of sync with `package.json` (missing a resolved `react-dom` entry), which failed
+  `npm ci` on the EAS build machine. Fixed by explicitly pinning `react-dom@19.1.0` to
+  match Expo SDK 54's required React version, via `npx expo install react-dom`.
+- **Build order step 7 is done through submission:** iOS build #3 (v1.0.0) succeeded and
+  was submitted to App Store Connect. Apple was still processing it as of 2026-08-22 —
+  **not yet confirmed:** actually installing via TestFlight on a real device.
+- App Store Connect app record created: "Susie's List", `ascAppId` 6804354294.
+
+**Still to do:**
+
+- [ ] Confirm the TestFlight build actually installs and runs on a real device once
+      Apple finishes processing.
+- [ ] Swap Sign in with Apple in for email OTP (step 3's deferred half, §12) — now
+      unblocked since a real dev-build capability exists.
+- [ ] Re-test sharing (`shareApp`/`shareFamily`, §18) on the real build — the custom
+      `susieslist://` scheme only registers with the OS in a dev client or standalone
+      build, so this has been untestable until now (see SPEC.md §18's status note).
+- [ ] App Store screenshots (not needed for TestFlight, but required before public/
+      unlisted App Store release) — plan is to capture natively on a real iPhone from
+      the TestFlight build rather than set up simulator-based automation.
+
+**Not Apple-blocked — can be picked up anytime, still outstanding regardless of build
+status:**
+
+- [ ] The original isolation test (build order step 1): confirm a *third*, unrelated
+      account (no membership, no code used) truly sees nothing of an existing family. Only
+      two accounts *in the same* family have ever been tested.
+- [ ] Offline item-detail viewing in airplane mode for an item created offline and not yet
+      synced (§15's one remaining known gap — create/edit/delete were exercised, this read
+      path wasn't).
+- [ ] Multi-family on-device testing (§18): joining a 2nd family and switcher behavior,
+      active-family persistence across a restart, a deep link tapped while the app is
+      already open, a deep link opened cold before login, a deep link opened by a
+      brand-new zero-family account (should hit the unchanged join-family flow, not
+      join-confirm), an invalid/expired code in join-confirm, and the "Switch families" /
+      "Create new family" links.

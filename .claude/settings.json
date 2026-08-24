@@ -39,7 +39,9 @@
       "Bash(npx supabase *)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(git status *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git rev-list *)",
+      "Bash(npx eas-cli *)"
     ]
   }
 }

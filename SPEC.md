@@ -818,3 +818,12 @@ tapped while the app is already open (the in-memory pending-invite fix), a deep 
 opened by a brand-new zero-family account (should still hit §13's flow, not
 `join-confirm`), and an invalid/expired code in `join-confirm`. Exercise all of these
 before calling this done.
+
+**Share links are currently inert — expected, not a bug.** Tested 2026-08-11: sharing via
+Mail sends the message, but `susieslist://join/CODE` doesn't render as a tappable link
+(Mail, like most apps, only auto-linkifies `http(s)://`/`mailto:`, not custom schemes), and
+even a correctly-tapped one wouldn't currently open anything — the app has only ever run
+under **Expo Go** so far, which doesn't register the project's own `susieslist://` scheme
+(`app.json`'s `scheme` only takes effect in a dev client or standalone build, same
+constraint noted for Sign in with Apple in §12). Both `shareApp` and `shareFamily` (§18)
+will start working for real once a real build exists — see CLAUDE.md's resume checklist.
