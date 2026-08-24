@@ -93,15 +93,42 @@ the build. Since then:
   out of sync with `package.json` (missing a resolved `react-dom` entry), which failed
   `npm ci` on the EAS build machine. Fixed by explicitly pinning `react-dom@19.1.0` to
   match Expo SDK 54's required React version, via `npx expo install react-dom`.
-- **Build order step 7 is done through submission:** iOS build #3 (v1.0.0) succeeded and
-  was submitted to App Store Connect. Apple was still processing it as of 2026-08-22 —
-  **not yet confirmed:** actually installing via TestFlight on a real device.
 - App Store Connect app record created: "Susie's List", `ascAppId` 6804354294.
+
+**Build order step 7 is done, confirmed on device: build #8 installs and runs cleanly via
+TestFlight.** Builds #3–#7 all crashed instantly on launch; root-caused and fixed
+2026-08-24, two separate issues stacked on top of each other:
+
+1. **A real, open React Native bug**: `ObjCTurboModule::performVoidMethodInvocation`
+   (`RCTTurboModule.mm`) converts a native exception from a void-returning TurboModule
+   method into a JS error even when the call was dispatched off the JS thread — touching
+   the Hermes runtime from the wrong thread, corrupting GC memory, and crashing somewhere
+   unrelated a moment later (which made every crash look different: SIGABRT, SIGSEGV,
+   SIGBUS in unrelated JS). Matches
+   [facebook/react-native#54859](https://github.com/facebook/react-native/issues/54859)
+   almost exactly (RN 0.81.5 + New Architecture + iOS 26.x Release builds — our exact
+   config). The sibling sync-path function already got the correct fix in
+   [PR #50193](https://github.com/facebook/react-native/pull/50193); the void path just
+   never got the same treatment. Patched via `patch-package` to mirror that same,
+   already-proven pattern — see `mobile/patches/react-native+0.81.5.patch`. **If
+   `react-native` is ever upgraded past 0.81.5, check whether upstream has since fixed
+   `performVoidMethodInvocation` properly before assuming this patch still applies
+   cleanly or is still needed.**
+2. **`EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_ANON_KEY` were never configured in
+   EAS's cloud environment variables.** `mobile/.env` only exists locally — EAS Build's
+   remote machines never had access to it, so every cloud build compiled both as
+   `undefined`, tripping `supabase.ts`'s own guard clause. Fixed via `eas env:set
+   production` (values now live under the project's `production` environment on EAS, not
+   in a repo file). **If the Supabase project's URL or anon key ever changes, update both
+   `mobile/.env` *and* the EAS-side copy** (`eas env:list production` to check current
+   values, `eas env:set production --name ... --value ... --force` to update).
+
+Once past the crash, the app itself came up clean — sign-in screen rendered, no other
+issues surfaced yet. Still only exercised minimally on this one build; the checklist below
+is still real testing debt, not superseded by "it launches now."
 
 **Still to do:**
 
-- [ ] Confirm the TestFlight build actually installs and runs on a real device once
-      Apple finishes processing.
 - [ ] Swap Sign in with Apple in for email OTP (step 3's deferred half, §12) — now
       unblocked since a real dev-build capability exists.
 - [ ] Re-test sharing (`shareApp`/`shareFamily`, §18) on the real build — the custom
