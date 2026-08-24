@@ -60,7 +60,7 @@ export function JoinCreateFamilyForm({
 
   return (
     <View>
-      <Text style={styles.label}>Enter your family code</Text>
+      <Text style={styles.label}>Enter your family list code</Text>
       <TextInput
         style={styles.input}
         value={code}
@@ -88,7 +88,7 @@ export function JoinCreateFamilyForm({
         onPress={() => setShowCreate((value) => !value)}
       >
         <Text style={styles.linkText}>
-          {showCreate ? "Cancel" : "Set up a new family instead"}
+          {showCreate ? "Cancel" : "Set up a new family list instead"}
         </Text>
       </Pressable>
 
@@ -103,7 +103,7 @@ export function JoinCreateFamilyForm({
             autoCorrect={false}
             editable={!isCreating}
           />
-          <Text style={styles.label}>Choose a family code</Text>
+          <Text style={styles.label}>Choose a family list code</Text>
           <TextInput
             style={styles.input}
             value={newCode}
@@ -125,7 +125,7 @@ export function JoinCreateFamilyForm({
             {isCreating ? (
               <ActivityIndicator color={colors.onAccent} />
             ) : (
-              <Text style={styles.buttonText}>Create family</Text>
+              <Text style={styles.buttonText}>Create family list</Text>
             )}
           </Pressable>
           {createError && <Text style={styles.error}>{createError}</Text>}

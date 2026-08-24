@@ -61,8 +61,8 @@ export default function JoinConfirm() {
         <>
           <Text style={styles.title}>Invite code not found</Text>
           <Text style={styles.body}>
-            "{pendingCode}" doesn't match a family. It may be mistyped or no
-            longer valid.
+            "{pendingCode}" doesn't match a family list. It may be mistyped or
+            no longer valid.
           </Text>
           <Pressable style={styles.primaryButton} onPress={handleDismiss}>
             <Text style={styles.primaryButtonText}>OK</Text>

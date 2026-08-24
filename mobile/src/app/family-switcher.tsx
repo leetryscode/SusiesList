@@ -48,9 +48,9 @@ export default function FamilySwitcher() {
       >
         <Text style={styles.title}>Susie's List</Text>
         <Text style={styles.blurb}>
-          A private, shareable list of the books, movies, music, and recipes
-          your family wants to pass down — one list per family, just for the
-          people you invite.
+          A private, shareable list of books, movies, music, recipes, and
+          anything else your family wants to pass down. Add items to the list
+          as they occur to you.
         </Text>
 
         {isLoading ? (
@@ -80,7 +80,7 @@ export default function FamilySwitcher() {
             onPress={() => toggleForm("create")}
           >
             <Text style={styles.actionButtonText}>
-              {activeForm === "create" ? "Cancel" : "Create a new family"}
+              {activeForm === "create" ? "Cancel" : "Create a new family list"}
             </Text>
           </Pressable>
           <Pressable
@@ -88,7 +88,7 @@ export default function FamilySwitcher() {
             onPress={() => toggleForm("join")}
           >
             <Text style={styles.actionButtonText}>
-              {activeForm === "join" ? "Cancel" : "Join a family with code"}
+              {activeForm === "join" ? "Cancel" : "Join a family list with code"}
             </Text>
           </Pressable>
         </View>

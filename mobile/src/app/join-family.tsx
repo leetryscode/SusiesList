@@ -20,7 +20,7 @@ export default function JoinFamily() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text style={styles.title}>Join a family</Text>
+      <Text style={styles.title}>Join a family list</Text>
       <JoinCreateFamilyForm initialCode={initialCode} />
     </KeyboardAvoidingView>
   );

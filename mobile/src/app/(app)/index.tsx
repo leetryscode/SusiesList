@@ -310,7 +310,7 @@ export default function Home() {
           <Text style={styles.switcherLinkText}>Switch families</Text>
         </Pressable>
         <Pressable onPress={clearActiveFamily} hitSlop={8}>
-          <Text style={styles.switcherLinkText}>Create new family</Text>
+          <Text style={styles.switcherLinkText}>Create new family list</Text>
         </Pressable>
       </View>
     </ScrollView>
