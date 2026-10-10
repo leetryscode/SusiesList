@@ -37,7 +37,8 @@ export async function shareFamily(
   inviteCode: string
 ): Promise<void> {
   const inviteLink = `https://leetryscode.github.io/join/${encodeURIComponent(inviteCode)}`;
-  const message = `Come add to ${subjectName}'s list! Get Susie's List, then enter code ${inviteCode} to join: ${inviteLink}`;
+  const install = APP_SHARE_URL ? ` from the App Store (${APP_SHARE_URL})` : "";
+  const message = `Come add to ${subjectName}'s list! Get Susie's List${install}, then tap this link or enter code ${inviteCode} to join: ${inviteLink}`;
   try {
     await Share.share({ message, url: inviteLink });
   } catch {

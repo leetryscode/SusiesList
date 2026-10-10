@@ -841,3 +841,14 @@ under **Expo Go** so far, which doesn't register the project's own `susieslist:/
 (`app.json`'s `scheme` only takes effect in a dev client or standalone build, same
 constraint noted for Sign in with Apple in §12). Both `shareApp` and `shareFamily` (§18)
 will start working for real once a real build exists — see CLAUDE.md's resume checklist.
+
+**Updated for the public App Store release, 2026-10-09.** The app went live on the App
+Store 2026-08-30, but sharing still assumed pre-release: `APP_SHARE_URL` (`config.ts`) was
+still `null`, so "Share app with Family" sent no link, and `shareFamily`'s message had no
+install link either — a recipient without the app tapped the Universal Link, landed on the
+fallback page, and had nowhere to install from. Both now include
+`https://apps.apple.com/app/id6804354294`. Also: `join-confirm` now silently switches to
+the family instead of asking "Join X's list?" when the pending code belongs to a family
+the user is already in (e.g. tapping your own shared link). The fallback page itself
+(`404.html` in the separate `leetryscode.github.io` repo) still mentions TestFlight and has
+no App Store link — update it there.

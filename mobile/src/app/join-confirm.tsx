@@ -8,7 +8,7 @@ import { colors, fonts } from "../theme";
 
 export default function JoinConfirm() {
   const { pendingCode, clearPendingCode } = usePendingInvite();
-  const { joinFamily } = useFamily();
+  const { families, joinFamily, setActiveFamily } = useFamily();
 
   const [familyName, setFamilyName] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(true);
@@ -18,6 +18,16 @@ export default function JoinConfirm() {
 
   useEffect(() => {
     if (!pendingCode) return;
+    // Tapping an invite to a family you're already in (e.g. your own shared
+    // link) just switches to it rather than asking "Join X's list?".
+    const existing = families.find(
+      (f) => f.invite_code.toUpperCase() === pendingCode.trim().toUpperCase()
+    );
+    if (existing) {
+      setActiveFamily(existing.id);
+      clearPendingCode();
+      return;
+    }
     let isMounted = true;
     setIsLookingUp(true);
     setLookupFailed(false);
@@ -33,6 +43,9 @@ export default function JoinConfirm() {
     return () => {
       isMounted = false;
     };
+    // Only re-run for a new code; families is already loaded by the time
+    // this screen can be reached (RootNavigator waits on it).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingCode]);
 
   if (!pendingCode) return null;

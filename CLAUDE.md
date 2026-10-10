@@ -178,6 +178,10 @@ re-discovered the hard way next time a new capability gets added to `app.json`:*
       `susieslist://` scheme. Build #17+ is the first to actually carry the
       `associatedDomains` entitlement - not yet confirmed that tapping it on a device with
       the app installed opens the app rather than the browser fallback page.
+- [ ] Ship the 2026-10-09 sharing fixes (App Store link in both share messages, see
+      SPEC.md §18) in a new App Store version, and update the fallback page in the
+      `leetryscode.github.io` repo: drop the TestFlight wording, add the App Store link
+      and a `<meta name="apple-itunes-app" content="app-id=6804354294">` banner.
 - [ ] App Store screenshots (not needed for TestFlight, but required before public/
       unlisted App Store release) — plan is to capture natively on a real iPhone from
       the TestFlight build rather than set up simulator-based automation.
