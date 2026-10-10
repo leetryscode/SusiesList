@@ -92,7 +92,7 @@ the build. Since then:
 - `mobile/eas.json` generated. iOS credentials are EAS-managed: a Distribution
   Certificate and Provisioning Profile exist under Apple Team `7VN35QQ8V7`, expiring
   2027-08-22. Authentication for builds/submits uses an App Store Connect API Key
-  (Key ID `QJ34DCMM6J`, file at `mobile/AuthKey_QJ34DCMM6J.p8`, gitignored) referenced
+  (Key ID `43XP6C638C`, file at `mobile/AuthKey_43XP6C638C.p8`, gitignored; replaced the original `QJ34DCMM6J` key, revoked 2026-10-09 after its only copy was lost with an old computer - keep a backup of the `.p8`, Apple only allows one download) referenced
   from `eas.json`'s `submit.production.ios` block — fully non-interactive going forward.
 - Fixed a pre-existing, unrelated bug found along the way: `mobile/package-lock.json` was
   out of sync with `package.json` (missing a resolved `react-dom` entry), which failed
